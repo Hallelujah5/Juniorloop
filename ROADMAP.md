@@ -1,5 +1,15 @@
 # ROADMAP — JuniorLoop
 
+## Product vision
+
+JuniorLoop lets anyone do what the owner built it for himself: **describe (or
+eventually upload) who you are, and see the jobs that actually suit you** — instead
+of F5-ing four job boards and reading senior postings dressed up as junior ones.
+The scoring profile is the seed of that; the flagship post-MVP feature is **CV
+upload → client-side parsing → auto-filled profile**, under the same privacy rule
+as everything else: the CV and the profile never leave the visitor's browser,
+nothing is stored server-side.
+
 ## Done (week-1 MVP — 2026-10-27)
 
 - pnpm monorepo: `core` (normalization + scoring, Vitest), `db` (Kysely + migrations,
@@ -37,6 +47,9 @@
 
 ## Post-MVP (no order promised)
 
+- [ ] **CV upload → auto-filled scoring profile** (parse client-side — pdf.js or
+      similar; extract skills/level; never upload the file to a server). This is
+      the flagship feature of the product vision above.
 - [ ] Accounts + saved searches + email digest (auth becomes worth it here).
 - [ ] VietnamWorks: only re-added if a legitimate link-out path exists (feed/partnership).
 - [ ] LLM job-description analysis (real requirements summary, red flags) — rides the
