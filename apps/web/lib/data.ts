@@ -61,6 +61,7 @@ export type ScanRunRow = {
   jobsSeen: number
   jobsNew: number
   error: string | null
+  track: string | null
 }
 
 export const getScanRuns = unstable_cache(
@@ -79,8 +80,35 @@ export const getScanRuns = unstable_cache(
       jobsSeen: r.jobs_seen,
       jobsNew: r.jobs_new,
       error: r.error_text,
+      track: r.track,
     }))
   },
   ['scan-runs'],
+  { tags: ['jobs'], revalidate: 1800 },
+)
+
+export type TrackCoverage = { track: string; keywords: string[]; lastScanned: string | null }
+
+/** What we crawl, as data — feeds the status page and the honest no-coverage notice. */
+export const getCrawledTracks = unstable_cache(
+  async (): Promise<TrackCoverage[]> => {
+    const rows = await db
+      .selectFrom('scan_keywords')
+      .selectAll()
+      .where('enabled', '=', true)
+      .orderBy('track')
+      .orderBy('keyword')
+      .execute()
+    const byTrack = new Map<string, TrackCoverage>()
+    for (const r of rows) {
+      const t = byTrack.get(r.track) ?? { track: r.track, keywords: [], lastScanned: null }
+      t.keywords.push(r.keyword)
+      const ts = r.last_scanned_at?.toISOString() ?? null
+      if (ts && (!t.lastScanned || ts > t.lastScanned)) t.lastScanned = ts
+      byTrack.set(r.track, t)
+    }
+    return [...byTrack.values()]
+  },
+  ['crawled-tracks'],
   { tags: ['jobs'], revalidate: 1800 },
 )

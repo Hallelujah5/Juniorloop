@@ -60,6 +60,15 @@ export function JobList({ jobs }: { jobs: JobRow[] }) {
         </button>
       </div>
 
+      {profile && visible.length > 0 && scored.every((j) => (j.score ?? 0) < 3) && (
+        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          None of the {visible.length} open postings match your primary skills — that is
+          likely a coverage gap on our side, not a bad market. Check{' '}
+          <a href="/profile" className="underline">your profile page</a> to see which
+          stacks we crawl today.
+        </p>
+      )}
+
       {visible.length === 0 && (
         <p className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-stone-500">
           No jobs match these filters. Try fewer keywords, or wait for the next scan.

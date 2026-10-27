@@ -40,10 +40,22 @@ export interface ScanRunsTable {
   jobs_seen: number
   jobs_new: number
   error_text: string | null
+  /** Which keyword track this run scanned; null for explicit --keywords runs. */
+  track: string | null
+}
+
+/** Crawl coverage as data: one track is scanned per run, least-recently first. */
+export interface ScanKeywordsTable {
+  id: Generated<number>
+  track: string
+  keyword: string
+  enabled: boolean
+  last_scanned_at: Date | null
 }
 
 export interface DB {
   sources: SourcesTable
   jobs: JobsTable
   scan_runs: ScanRunsTable
+  scan_keywords: ScanKeywordsTable
 }

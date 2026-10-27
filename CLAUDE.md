@@ -60,8 +60,14 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
 
 ```bash
 pnpm db:migrate                       # create DB if missing + apply migrations
-pnpm scan --sources topdev            # scan one source (no "--" before flags)
-pnpm scan --sources itviec,topcv      # HTML sources (personal machine)
+pnpm scan                             # rotation: least-recently-scanned track
+pnpm scan --track game                # force one track
+pnpm scan --keywords unity,unreal     # explicit keywords (no rotation bookkeeping)
+pnpm scan --sources topdev            # limit sources (CI runs this; no "--" before flags)
 pnpm test && pnpm typecheck           # before every commit
 pnpm dev                              # web at localhost:3000
 ```
+
+Crawl coverage lives in the `scan_keywords` table (tracks: web, mobile, game, data,
+qa, devops). Add coverage with an INSERT in a new migration, never by widening the
+per-run request volume: one track per run is the politeness budget.

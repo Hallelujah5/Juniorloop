@@ -35,14 +35,12 @@ fetches against the source sites.
 
 ## Week 2 — retrieval coverage, lifecycle & category pages
 
-- [ ] **Retrieval coverage (the Unity problem):** move crawl keywords from the CLI
-      default into a `scan_keywords` DB table seeded per track (web, mobile,
-      game/unity, data, QA, devops…), editable without a deploy; scan each track on
-      rotation to stay within the 4-runs/day politeness budget. Show per-track
-      freshness on /status.
-- [ ] Profile UI: when a visitor's skills have no coverage in the corpus (zero
-      matches across all open jobs), say so honestly on the page instead of showing
-      noise — "we don't crawl this stack yet".
+- [x] **Retrieval coverage (the Unity problem)** — done 2026-10-27: `scan_keywords`
+      table seeded per track (web, mobile, game, data, qa, devops), one track per
+      run in least-recently-scanned rotation (politeness budget stays constant),
+      per-keyword failure skipping (a 404 keyword no longer kills a source),
+      per-track freshness on /status, and honest no-coverage notices on /profile
+      and the job list. Verified live: Unity profile → Unity jobs ranked on top.
 - [ ] Expiry: mark `expired` after ≥2 consecutive successful scans without the job;
       reopening on re-sight already works in the upsert.
 - [ ] Category pages `/jobs/{skill}` and `/jobs/{skill}/{city}` — where the SEO value

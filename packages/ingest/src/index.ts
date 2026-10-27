@@ -1,9 +1,11 @@
 /**
- * Scan CLI — runs on GitHub Actions (API sources) and on a personal machine (HTML sources):
- *   pnpm scan --sources topdev            # on CI
- *   pnpm scan --sources itviec,topcv      # on the personal machine (Task Scheduler)
- *   pnpm scan --keywords nodejs,reactjs --delay 2
- * Respects the kill switch: sources with ingest_enabled=false in the DB are skipped.
+ * Scan CLI — runs on GitHub Actions (API sources) and on a personal machine (HTML sources).
+ *   pnpm scan                           # rotation: scans the least-recently-scanned track
+ *   pnpm scan --track game              # force one track
+ *   pnpm scan --keywords unity,unreal   # explicit keywords (no rotation bookkeeping)
+ *   pnpm scan --sources topdev          # limit sources (CI runs this)
+ * Respects the kill switch (sources.ingest_enabled) and the politeness budget:
+ * scanning ONE track per run keeps request volume constant as coverage grows.
  */
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,7 +13,7 @@ import { config } from 'dotenv'
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '.env') })
 
 import { parseArgs } from 'node:util'
-import { createDb } from '@juniorloop/db'
+import { createDb, type Db } from '@juniorloop/db'
 import { SourceBlocked } from './http'
 import { fetchItviec } from './sources/itviec'
 import { fetchTopcv } from './sources/topcv'
@@ -28,10 +30,33 @@ const SOURCES: Record<string, SourceFn> = {
 const { values: arg } = parseArgs({
   options: {
     sources: { type: 'string', default: Object.keys(SOURCES).join(',') },
-    keywords: { type: 'string', default: 'nodejs,reactjs,typescript,fullstack' },
+    keywords: { type: 'string' },
+    track: { type: 'string' },
     delay: { type: 'string', default: '1.5' },
   },
 })
+
+/** Rotation: the enabled track whose keywords were scanned longest ago (never-scanned first). */
+async function pickTrack(db: Db, forced?: string): Promise<{ track: string; keywords: string[] }> {
+  let q = db.selectFrom('scan_keywords').selectAll().where('enabled', '=', true)
+  if (forced) q = q.where('track', '=', forced)
+  const rows = await q.execute()
+  if (rows.length === 0) {
+    throw new Error(forced
+      ? `track "${forced}" has no enabled keywords`
+      : 'scan_keywords is empty — apply migrations first')
+  }
+  const byTrack = new Map<string, { keywords: string[]; oldest: number }>()
+  for (const r of rows) {
+    const t = byTrack.get(r.track) ?? { keywords: [], oldest: Infinity }
+    t.keywords.push(r.keyword)
+    t.oldest = Math.min(t.oldest, r.last_scanned_at ? r.last_scanned_at.getTime() : -1)
+    byTrack.set(r.track, t)
+  }
+  const [track, data] = [...byTrack.entries()]
+    .sort((a, b) => a[1].oldest - b[1].oldest || a[0].localeCompare(b[0]))[0]!
+  return { track, keywords: data.keywords }
+}
 
 async function callRevalidate() {
   const url = process.env.REVALIDATE_URL
@@ -47,10 +72,21 @@ async function callRevalidate() {
 
 async function main() {
   const db = createDb()
-  const keywords = arg.keywords!.split(',').map((s) => s.trim()).filter(Boolean)
   const delaySeconds = Number(arg.delay) || 1.5
-  const requested = arg.sources!.split(',').map((s) => s.trim()).filter(Boolean)
 
+  let keywords: string[]
+  let track: string | null = null
+  if (arg.keywords) {
+    keywords = arg.keywords.split(',').map((s) => s.trim()).filter(Boolean)
+    console.log(`[keywords] explicit: ${keywords.join(', ')} (no rotation bookkeeping)`)
+  } else {
+    const picked = await pickTrack(db, arg.track)
+    track = picked.track
+    keywords = picked.keywords
+    console.log(`[rotation] track "${track}" — keywords: ${keywords.join(', ')}`)
+  }
+
+  const requested = arg.sources!.split(',').map((s) => s.trim()).filter(Boolean)
   const enabled = await db
     .selectFrom('sources')
     .select(['code'])
@@ -61,7 +97,7 @@ async function main() {
   const skipped = requested.filter((c) => !toRun.includes(c))
   if (skipped.length) console.log(`[kill-switch] skipping disabled/unknown sources: ${skipped.join(', ')}`)
 
-  let failures = 0
+  let okCount = 0
   for (const code of toRun) {
     const startedAt = new Date()
     try {
@@ -69,23 +105,32 @@ async function main() {
       const { seen, inserted } = await upsertJobs(db, code, jobs)
       await db.insertInto('scan_runs').values({
         source: code, started_at: startedAt, finished_at: new Date(),
-        status: 'ok', jobs_seen: seen, jobs_new: inserted, error_text: null,
+        status: 'ok', jobs_seen: seen, jobs_new: inserted, error_text: null, track,
       }).execute()
+      okCount += 1
       console.log(`[${code}] ok — ${seen} jobs, ${inserted} new`)
     } catch (e) {
-      failures += 1
       const msg = e instanceof SourceBlocked ? e.message : String((e as Error).message)
       await db.insertInto('scan_runs').values({
         source: code, started_at: startedAt, finished_at: new Date(),
-        status: 'error', jobs_seen: 0, jobs_new: 0, error_text: msg.slice(0, 500),
+        status: 'error', jobs_seen: 0, jobs_new: 0, error_text: msg.slice(0, 500), track,
       }).execute()
       console.error(`[${code}] ERROR — ${msg}`)
     }
   }
 
+  // Stamp the track only when at least one source succeeded, so a fully failed
+  // run does not push the track to the back of the rotation queue.
+  if (track && okCount > 0) {
+    await db.updateTable('scan_keywords')
+      .set({ last_scanned_at: new Date() })
+      .where('track', '=', track)
+      .execute()
+  }
+
   await callRevalidate()
   await db.destroy()
-  process.exit(failures === toRun.length && toRun.length > 0 ? 1 : 0)
+  process.exit(okCount === 0 && toRun.length > 0 ? 1 : 0)
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })
