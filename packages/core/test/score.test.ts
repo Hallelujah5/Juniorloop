@@ -1,0 +1,37 @@
+import { describe, expect, it } from 'vitest'
+import { scoreJob } from '../src/score'
+import { DEFAULT_PROFILE } from '../src/types'
+
+const matchingJob = {
+  title: 'Junior Fullstack Developer (ReactJS, NestJS, PostgreSQL)',
+  company: 'SETA International',
+  salary: '15-20 triệu',
+  location: 'Hà Nội',
+  skills: ['ReactJS', 'NestJS', 'PostgreSQL', 'English'],
+}
+
+const mismatchedJob = {
+  title: 'Embedded Engineer (C/C++) 5+ years',
+  company: 'ABC Corp',
+  salary: null,
+  location: 'Hà Nội',
+  skills: ['C++', 'RTOS'],
+}
+
+describe('scoreJob', () => {
+  it('scores stack + junior + English matches high', () => {
+    expect(scoreJob(matchingJob, DEFAULT_PROFILE)).toBeGreaterThanOrEqual(10)
+  })
+  it('scores off-stack 5+-years postings low', () => {
+    expect(scoreJob(mismatchedJob, DEFAULT_PROFILE)).toBeLessThan(3)
+  })
+  it('turning off the English preference drops the score by exactly 2', () => {
+    const withPref = scoreJob(matchingJob, DEFAULT_PROFILE)
+    const withoutPref = scoreJob(matchingJob, { ...DEFAULT_PROFILE, prefersEnglish: false })
+    expect(withPref - withoutPref).toBe(2)
+  })
+  it('synonyms: a profile saying "react" still matches a posting saying "ReactJS"', () => {
+    const profile = { primaryStack: ['react'], secondaryStack: [], prefersEnglish: false }
+    expect(scoreJob({ title: 'ReactJS Developer', company: 'X' }, profile)).toBeGreaterThanOrEqual(3)
+  })
+})

@@ -1,49 +1,49 @@
 import type { Generated } from 'kysely'
 
-/** Danh mục nguồn + kill-switch: một câu UPDATE là nguồn biến mất, không cần deploy. */
-export interface NguonTable {
-  ma: string
-  ten: string
-  enabled_ingest: boolean
-  enabled_hien_thi: boolean
-  ghi_chu: string | null
+/** Source catalogue + kill switch: one UPDATE removes a source, no deploy needed. */
+export interface SourcesTable {
+  code: string
+  name: string
+  ingest_enabled: boolean
+  display_enabled: boolean
+  notes: string | null
 }
 
-export interface ViecTable {
+export interface JobsTable {
   id: Generated<number>
-  nguon: string
-  /** Id bên trang nguồn — key chống trùng trong-nguồn là UNIQUE(nguon, nguon_id). */
-  nguon_id: string
+  source: string
+  /** Id on the source site — the in-source dedupe key is UNIQUE(source, source_id). */
+  source_id: string
   url: string
-  tieu_de_raw: string
-  tieu_de_chuan: string
-  cong_ty_raw: string
-  cong_ty_chuan: string
-  luong_raw: string | null
-  dia_diem: string | null
+  title_raw: string
+  title_norm: string
+  company_raw: string
+  company_norm: string
+  salary_raw: string | null
+  location: string | null
   skills: string[]
-  /** Gắn cờ thay vì xoá — "chỉ junior" là tính năng lọc, không phải mất dữ liệu. */
-  la_senior: boolean
-  trang_thai: 'mo' | 'het_han' | 'an'
+  /** Flagged instead of deleted — "juniors only" is a display filter, not data loss. */
+  is_senior: boolean
+  status: 'open' | 'expired' | 'hidden'
   first_seen_at: Generated<Date>
   last_seen_at: Date
-  /** Nhóm tin trùng cross-source (tuần 3) — không merge phá huỷ. */
-  nhom_trung: number | null
+  /** Cross-source duplicate group (week 3) — never a destructive merge. */
+  dup_group: number | null
 }
 
-export interface LanQuetTable {
+export interface ScanRunsTable {
   id: Generated<number>
-  nguon: string
+  source: string
   started_at: Date
   finished_at: Date | null
-  trang_thai: 'ok' | 'loi'
-  so_tin_thay: number
-  so_tin_moi: number
-  loi_text: string | null
+  status: 'ok' | 'error'
+  jobs_seen: number
+  jobs_new: number
+  error_text: string | null
 }
 
 export interface DB {
-  nguon: NguonTable
-  viec: ViecTable
-  lan_quet: LanQuetTable
+  sources: SourcesTable
+  jobs: JobsTable
+  scan_runs: ScanRunsTable
 }

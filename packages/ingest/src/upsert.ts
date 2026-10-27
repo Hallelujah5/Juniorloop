@@ -1,63 +1,63 @@
-import { chuanHoaCongTy, chuanHoaTieuDe, laSenior } from '@juniorloop/core'
+import { isSenior, normalizeCompany, normalizeTitle } from '@juniorloop/core'
 import type { Db } from '@juniorloop/db'
-import type { TinThu } from './nguon/types'
+import type { RawJob } from './sources/types'
 
-/** Upsert theo (nguon, nguon_id); tin thấy lại thì cập nhật last_seen và MỞ lại. */
-export async function ghiTin(
+/** Upsert on (source, source_id); a job seen again gets last_seen updated and is REOPENED. */
+export async function upsertJobs(
   db: Db,
-  nguon: string,
-  tins: TinThu[],
-): Promise<{ thay: number; moi: number }> {
-  if (tins.length === 0) return { thay: 0, moi: 0 }
+  source: string,
+  jobs: RawJob[],
+): Promise<{ seen: number; inserted: number }> {
+  if (jobs.length === 0) return { seen: 0, inserted: 0 }
 
-  const daCo = new Set(
+  const existing = new Set(
     (
       await db
-        .selectFrom('viec')
-        .select('nguon_id')
-        .where('nguon', '=', nguon)
-        .where('nguon_id', 'in', tins.map((t) => t.nguonId))
+        .selectFrom('jobs')
+        .select('source_id')
+        .where('source', '=', source)
+        .where('source_id', 'in', jobs.map((j) => j.sourceId))
         .execute()
-    ).map((r) => r.nguon_id),
+    ).map((r) => r.source_id),
   )
 
-  const gio = new Date()
-  for (const t of tins) {
-    if (!t.tieuDe) continue
-    const hang = {
-      nguon,
-      nguon_id: t.nguonId,
-      url: t.url,
-      tieu_de_raw: t.tieuDe,
-      tieu_de_chuan: chuanHoaTieuDe(t.tieuDe),
-      cong_ty_raw: t.congTy,
-      cong_ty_chuan: chuanHoaCongTy(t.congTy),
-      luong_raw: t.luong,
-      dia_diem: t.diaDiem,
-      skills: t.skills,
-      la_senior: laSenior(t.tieuDe),
-      trang_thai: 'mo' as const,
-      last_seen_at: gio,
+  const now = new Date()
+  for (const j of jobs) {
+    if (!j.title) continue
+    const row = {
+      source,
+      source_id: j.sourceId,
+      url: j.url,
+      title_raw: j.title,
+      title_norm: normalizeTitle(j.title),
+      company_raw: j.company,
+      company_norm: normalizeCompany(j.company),
+      salary_raw: j.salary,
+      location: j.location,
+      skills: j.skills,
+      is_senior: isSenior(j.title),
+      status: 'open' as const,
+      last_seen_at: now,
     }
     await db
-      .insertInto('viec')
-      .values(hang)
+      .insertInto('jobs')
+      .values(row)
       .onConflict((oc) =>
-        oc.columns(['nguon', 'nguon_id']).doUpdateSet({
-          url: hang.url,
-          tieu_de_raw: hang.tieu_de_raw,
-          tieu_de_chuan: hang.tieu_de_chuan,
-          cong_ty_raw: hang.cong_ty_raw,
-          cong_ty_chuan: hang.cong_ty_chuan,
-          luong_raw: hang.luong_raw,
-          dia_diem: hang.dia_diem,
-          skills: hang.skills,
-          la_senior: hang.la_senior,
-          trang_thai: 'mo', // thấy lại → mở lại, giữ first_seen_at
-          last_seen_at: gio,
+        oc.columns(['source', 'source_id']).doUpdateSet({
+          url: row.url,
+          title_raw: row.title_raw,
+          title_norm: row.title_norm,
+          company_raw: row.company_raw,
+          company_norm: row.company_norm,
+          salary_raw: row.salary_raw,
+          location: row.location,
+          skills: row.skills,
+          is_senior: row.is_senior,
+          status: 'open', // seen again → reopen, keep first_seen_at
+          last_seen_at: now,
         }),
       )
       .execute()
   }
-  return { thay: tins.length, moi: tins.filter((t) => !daCo.has(t.nguonId)).length }
+  return { seen: jobs.length, inserted: jobs.filter((j) => !existing.has(j.sourceId)).length }
 }

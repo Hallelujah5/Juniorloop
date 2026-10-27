@@ -1,3 +1,3 @@
 export * from './types'
-export * from './chuanhoa'
-export * from './chamdiem'
+export * from './normalize'
+export * from './score'

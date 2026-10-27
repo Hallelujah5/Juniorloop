@@ -1,47 +1,50 @@
 # ROADMAP — JuniorLoop
 
-## Đã xong (MVP tuần 1 — 27/10/2026)
+## Done (week-1 MVP — 2026-10-27)
 
-- Monorepo pnpm: `core` (chuẩn hoá + chấm điểm, Vitest), `db` (Kysely + migrations,
-  kill-switch per-source), `ingest` (TopDev API + ITviec/TopCV HTML, circuit breaker,
-  CLI), `web` (list + lọc + sort theo điểm, hồ sơ localStorage, trạng thái pipeline,
-  nguyên tắc dữ liệu, revalidate theo tag).
-- Workflows: `tham-do` (thí nghiệm IP datacenter), `quet-topdev` (cron 6h), `ci`.
+- pnpm monorepo: `core` (normalization + scoring, Vitest), `db` (Kysely + migrations,
+  per-source kill switch, local reset script), `ingest` (TopDev API + ITviec/TopCV
+  HTML, circuit breaker, CLI), `web` (list + filters + fit-score sorting, localStorage
+  profile, pipeline status page, data principles, tag-based revalidation).
+- Workflows: `probe-sources` (datacenter-IP experiment), `scan-topdev` (6h cron), `ci`.
+- Full English pass: identifiers, schema, routes, UI copy, docs, commits
+  (Vietnamese string literals in `core` kept deliberately as domain data).
 
-## Tuần 2 — vòng đời & danh mục
+## Week 2 — lifecycle & category pages
 
-- [ ] Expiry: job cuối lần quét đánh `het_han` khi ≥2 lần quét ok liên tiếp không
-      thấy lại; thấy lại thì mở lại (đã có sẵn chiều mở lại trong upsert).
-- [ ] Trang danh mục `/viec-lam/{skill}` và `/viec-lam/{skill}/{thanh-pho}` — nơi
-      đặt giá trị SEO (số tin, thống kê lương hiển thị, ItemList).
-- [ ] ITviec: tách tên công ty từ slug (hiện fallback "(xem trong tin)").
-- [ ] Chạy `tham-do` trên Actions → chốt phân bổ nguồn CI vs máy cá nhân vào README.
+- [ ] Expiry: mark `expired` after ≥2 consecutive successful scans without the job;
+      reopening on re-sight already works in the upsert.
+- [ ] Category pages `/jobs/{skill}` and `/jobs/{skill}/{city}` — where the SEO value
+      lives (posting counts, salary stats, ItemList).
+- [ ] ITviec: extract the company name from the slug (currently "(see posting)").
+- [ ] Run `probe-sources` on Actions → record the CI vs home-machine split in README.
 
-## Tuần 3 — dedupe & đánh bóng
+## Week 3 — dedupe & polish
 
-- [ ] Dedupe cross-source: blocking theo `cong_ty_chuan` + bucket thành phố,
-      token-set Jaccard ≥ 0.6 (map ~15 cặp đồng nghĩa) → gán `nhom_trung`,
-      UI gộp 1 card nhiều nút nguồn. Không merge phá huỷ; thà sót còn hơn gộp sai.
-- [ ] Thành phố là filter thật (hiện ITviec/TopCV khoá Hà Nội ở URL quét).
-- [ ] README thêm ảnh chụp + diagram kiến trúc.
+- [ ] Cross-source dedupe: block on `company_norm` equality + same city bucket, then
+      token-set Jaccard ≥ 0.6 over synonym-mapped titles (~15 pairs) → assign
+      `dup_group`, render one card with multiple source buttons. Never a destructive
+      merge; prefer missing a duplicate over a false merge.
+- [ ] City as a real filter (ITviec/TopCV currently lock Hanoi in the scan URL).
+- [ ] README: screenshots + architecture diagram.
 
-## Trước khi dùng làm portfolio
+## Before using as a portfolio piece
 
-- [ ] Chuyển repo public (đang private vì chủ repo còn đi làm).
-- [ ] Deploy Vercel (Hobby, phi thương mại) + Neon; điền secrets
-      `DATABASE_URL`, `REVALIDATE_URL`, `REVALIDATE_SECRET` vào GitHub.
-- [ ] Backup tuần: workflow `pg_dump` ra artifact.
+- [ ] Make the repo public (private for now — the owner is still employed).
+- [ ] Deploy Vercel (Hobby, non-commercial) + Neon; fill the GitHub secrets
+      `DATABASE_URL`, `REVALIDATE_URL`, `REVALIDATE_SECRET`.
+- [ ] Weekly backup: a `pg_dump` workflow uploading an artifact.
 
-## Sau MVP (không cam kết thứ tự)
+## Post-MVP (no order promised)
 
-- [ ] Tài khoản + lưu tìm kiếm + email digest (lúc đó mới cần auth).
-- [ ] VietnamWorks: chỉ thêm lại nếu có đường link-out đàng hoàng (feed/hợp tác).
-- [ ] LLM phân tích JD (tóm tắt yêu cầu thật, cờ đỏ) — bắt trend tuyển junior có
-      kỹ năng AI; chạy on-demand để không tốn tiền.
-- [ ] Thống kê lương theo skill/city từ `luong_raw` (cần parser lương tử tế).
+- [ ] Accounts + saved searches + email digest (auth becomes worth it here).
+- [ ] VietnamWorks: only re-added if a legitimate link-out path exists (feed/partnership).
+- [ ] LLM job-description analysis (real requirements summary, red flags) — rides the
+      junior-AI-skills hiring trend; on-demand to stay free.
+- [ ] Salary stats per skill/city from `salary_raw` (needs a proper salary parser).
 
-## Nhắc vận hành
+## Operational reminders
 
-- Actions schedule tự TẮT nếu repo 60 ngày không hoạt động (GitHub gửi mail) —
-  tháng nào cũng nên có commit.
-- Vercel Hobby cấm thương mại: không ads. Muốn kiếm tiền → Pro hoặc đổi hosting.
+- Actions schedules auto-disable after 60 days of repo inactivity (GitHub emails
+  first) — land at least one commit a month.
+- Vercel Hobby forbids commercial use: no ads. To monetize → Pro or different hosting.

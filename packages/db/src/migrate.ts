@@ -1,7 +1,7 @@
 /**
- * Migration runner tối giản: áp các file .sql trong migrations/ theo thứ tự tên,
- * ghi sổ vào bảng _migrations. Tự tạo database nếu chưa có (tiện cho dev local).
- * Chạy: pnpm db:migrate
+ * Minimal migration runner: applies the .sql files in migrations/ in filename
+ * order, recording them in the _migrations table. Creates the database itself
+ * if it does not exist yet (handy for local dev). Run: pnpm db:migrate
  */
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
@@ -9,25 +9,25 @@ import { fileURLToPath } from 'node:url'
 import { config } from 'dotenv'
 import pg from 'pg'
 
-const GOC = dirname(fileURLToPath(import.meta.url))
-config({ path: join(GOC, '..', '..', '..', '.env') }) // .env ở gốc monorepo
-const THU_MUC = join(GOC, '..', 'migrations')
+const HERE = dirname(fileURLToPath(import.meta.url))
+config({ path: join(HERE, '..', '..', '..', '.env') }) // .env lives at the monorepo root
+const MIGRATIONS_DIR = join(HERE, '..', 'migrations')
 
-async function taoDatabaseNeuChua(url: string) {
+async function createDatabaseIfMissing(url: string) {
   const u = new URL(url)
-  const tenDb = u.pathname.slice(1)
+  const dbName = u.pathname.slice(1)
   u.pathname = '/postgres'
   const client = new pg.Client({ connectionString: u.toString() })
   try {
     await client.connect()
-    const r = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [tenDb])
+    const r = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [dbName])
     if (r.rowCount === 0) {
-      await client.query(`CREATE DATABASE "${tenDb.replace(/"/g, '')}"`)
-      console.log(`[db] đã tạo database ${tenDb}`)
+      await client.query(`CREATE DATABASE "${dbName.replace(/"/g, '')}"`)
+      console.log(`[db] created database ${dbName}`)
     }
   } catch (e) {
-    // Neon/managed PG thường không cho nối vào 'postgres' — bỏ qua, DB đã có sẵn.
-    console.log('[db] bỏ qua bước tạo database:', (e as Error).message.split('\n')[0])
+    // Neon/managed PG usually refuses connections to 'postgres' — skip; the DB already exists.
+    console.log('[db] skipping database creation:', (e as Error).message.split('\n')[0])
   } finally {
     await client.end().catch(() => {})
   }
@@ -35,34 +35,34 @@ async function taoDatabaseNeuChua(url: string) {
 
 async function main() {
   const url = process.env.DATABASE_URL
-  if (!url) throw new Error('Thiếu DATABASE_URL')
-  await taoDatabaseNeuChua(url)
+  if (!url) throw new Error('Missing DATABASE_URL')
+  await createDatabaseIfMissing(url)
 
   const client = new pg.Client({ connectionString: url })
   await client.connect()
   await client.query(`CREATE TABLE IF NOT EXISTS _migrations (
-    ten text PRIMARY KEY, ap_luc timestamptz NOT NULL DEFAULT now())`)
+    name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`)
 
-  const daAp = new Set(
-    (await client.query('SELECT ten FROM _migrations')).rows.map((r) => r.ten as string),
+  const applied = new Set(
+    (await client.query('SELECT name FROM _migrations')).rows.map((r) => r.name as string),
   )
-  const files = (await readdir(THU_MUC)).filter((f) => f.endsWith('.sql')).sort()
+  const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort()
 
   for (const f of files) {
-    if (daAp.has(f)) continue
-    const sql = await readFile(join(THU_MUC, f), 'utf-8')
-    console.log(`[db] áp ${f}…`)
+    if (applied.has(f)) continue
+    const sql = await readFile(join(MIGRATIONS_DIR, f), 'utf-8')
+    console.log(`[db] applying ${f}…`)
     await client.query('BEGIN')
     try {
       await client.query(sql)
-      await client.query('INSERT INTO _migrations (ten) VALUES ($1)', [f])
+      await client.query('INSERT INTO _migrations (name) VALUES ($1)', [f])
       await client.query('COMMIT')
     } catch (e) {
       await client.query('ROLLBACK')
       throw e
     }
   }
-  console.log('[db] xong — schema mới nhất.')
+  console.log('[db] done — schema is up to date.')
   await client.end()
 }
 

@@ -1,86 +1,86 @@
 import { unstable_cache } from 'next/cache'
 import { db } from './db'
 
-export type TinHienThi = {
+export type JobRow = {
   id: number
-  nguon: string
-  nguonTen: string
+  source: string
+  sourceName: string
   url: string
-  tieuDe: string
-  congTy: string
-  luong: string | null
-  diaDiem: string | null
+  title: string
+  company: string
+  salary: string | null
+  location: string | null
   skills: string[]
-  laSenior: boolean
+  isSenior: boolean
   lastSeen: string
 }
 
 /**
- * Một cache entry duy nhất cho toàn bộ tin đang mở (≤1000 dòng) — lọc theo filter
- * làm in-memory ở server component. DB chỉ bị đánh thức khi ingest gọi revalidate
- * hoặc hết hạn 30 phút → nằm xa trần compute của Neon free.
+ * One cache entry for every open job (≤1000 rows) — filters run in-memory in the
+ * server component. The DB only wakes when ingest calls revalidate or the 30-minute
+ * TTL expires, keeping us far below Neon free's compute ceiling.
  */
-export const layViec = unstable_cache(
-  async (): Promise<TinHienThi[]> => {
+export const getJobs = unstable_cache(
+  async (): Promise<JobRow[]> => {
     const rows = await db
-      .selectFrom('viec')
-      .innerJoin('nguon', 'nguon.ma', 'viec.nguon')
+      .selectFrom('jobs')
+      .innerJoin('sources', 'sources.code', 'jobs.source')
       .select([
-        'viec.id', 'viec.nguon', 'nguon.ten as nguon_ten', 'viec.url',
-        'viec.tieu_de_raw', 'viec.cong_ty_raw', 'viec.luong_raw',
-        'viec.dia_diem', 'viec.skills', 'viec.la_senior', 'viec.last_seen_at',
+        'jobs.id', 'jobs.source', 'sources.name as source_name', 'jobs.url',
+        'jobs.title_raw', 'jobs.company_raw', 'jobs.salary_raw',
+        'jobs.location', 'jobs.skills', 'jobs.is_senior', 'jobs.last_seen_at',
       ])
-      .where('viec.trang_thai', '=', 'mo')
-      .where('nguon.enabled_hien_thi', '=', true)
-      .orderBy('viec.last_seen_at', 'desc')
+      .where('jobs.status', '=', 'open')
+      .where('sources.display_enabled', '=', true)
+      .orderBy('jobs.last_seen_at', 'desc')
       .limit(1000)
       .execute()
     return rows.map((r) => ({
       id: r.id,
-      nguon: r.nguon,
-      nguonTen: r.nguon_ten,
+      source: r.source,
+      sourceName: r.source_name,
       url: r.url,
-      tieuDe: r.tieu_de_raw,
-      congTy: r.cong_ty_raw,
-      luong: r.luong_raw,
-      diaDiem: r.dia_diem,
+      title: r.title_raw,
+      company: r.company_raw,
+      salary: r.salary_raw,
+      location: r.location,
       skills: r.skills,
-      laSenior: r.la_senior,
+      isSenior: r.is_senior,
       lastSeen: r.last_seen_at.toISOString(),
     }))
   },
-  ['viec-mo'],
-  { tags: ['viec'], revalidate: 1800 },
+  ['open-jobs'],
+  { tags: ['jobs'], revalidate: 1800 },
 )
 
-export type LanQuetHienThi = {
+export type ScanRunRow = {
   id: number
-  nguon: string
-  batDau: string
-  trangThai: string
-  soTinThay: number
-  soTinMoi: number
-  loi: string | null
+  source: string
+  startedAt: string
+  status: string
+  jobsSeen: number
+  jobsNew: number
+  error: string | null
 }
 
-export const layLanQuet = unstable_cache(
-  async (): Promise<LanQuetHienThi[]> => {
+export const getScanRuns = unstable_cache(
+  async (): Promise<ScanRunRow[]> => {
     const rows = await db
-      .selectFrom('lan_quet')
+      .selectFrom('scan_runs')
       .selectAll()
       .orderBy('started_at', 'desc')
       .limit(30)
       .execute()
     return rows.map((r) => ({
       id: r.id,
-      nguon: r.nguon,
-      batDau: r.started_at.toISOString(),
-      trangThai: r.trang_thai,
-      soTinThay: r.so_tin_thay,
-      soTinMoi: r.so_tin_moi,
-      loi: r.loi_text,
+      source: r.source,
+      startedAt: r.started_at.toISOString(),
+      status: r.status,
+      jobsSeen: r.jobs_seen,
+      jobsNew: r.jobs_new,
+      error: r.error_text,
     }))
   },
-  ['lan-quet'],
-  { tags: ['viec'], revalidate: 1800 },
+  ['scan-runs'],
+  { tags: ['jobs'], revalidate: 1800 },
 )

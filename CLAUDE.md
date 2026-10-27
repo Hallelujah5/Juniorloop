@@ -1,61 +1,67 @@
 # CLAUDE.md — JuniorLoop
 
-## Dự án là gì
+## What this project is
 
-Job board gom tin tuyển dụng IT cho junior dev VN: `packages/ingest` quét TopDev (API,
-chạy GitHub Actions) + ITviec, TopCV (HTML, chạy từ máy cá nhân) → PostgreSQL (Kysely)
-→ `apps/web` (Next.js ISR) hiển thị, lọc junior, chấm điểm độ hợp phía client theo hồ
-sơ trong localStorage (không auth, không PII). Monorepo pnpm; mục tiêu kép: sản phẩm
-thật + portfolio (stack TS/React/Node/PG/Kysely).
+A job board for junior developers in Vietnam: `packages/ingest` scans TopDev (API, on
+GitHub Actions) + ITviec, TopCV (HTML, from a residential machine) → PostgreSQL
+(Kysely) → `apps/web` (Next.js ISR) renders the list, filters juniors, and scores fit
+client-side against a localStorage profile (no auth, no PII). pnpm monorepo; dual
+goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
 
-## Quy ước bắt buộc
+## Hard conventions
 
-- **Trả lời người dùng bằng tiếng Việt.** Code: tên hàm/biến tiếng Việt không dấu
-  (`chamDiem`, `boDau`, `lanQuet`…), docstring tiếng Việt — giữ nhất quán.
-- **Commit tiếng Việt**, conventional (`feat:`, `fix:`, `chore:`), **KHÔNG
-  Co-Authored-By**. Email commit repo này: **tdmhale5@gmail.com** (đã set cục bộ;
-  repo cá nhân — không dùng email công ty; sai thì hướng dẫn sửa, không tự
-  amend/force-push).
-- Package dùng chung (`core`) phải **isomorphic** — không import `node:*` (client
-  cũng chạy chấm điểm). `db`/`ingest` là server-only.
-- Schema đổi bằng file SQL mới trong `packages/db/migrations/` (đánh số tăng dần),
-  không sửa file đã áp.
-- Test: Vitest trong `packages/core` cho mọi logic thuần (chấm điểm, chuẩn hoá);
-  parser nguồn kiểm bằng chạy thật, không mock HTML (mock sẽ mục).
+- **Chat language**: ask the user once whether they prefer Vietnamese or English
+  replies, then keep that choice forever.
+- **Everything in the repo is English**: identifiers, comments, docs, commit
+  messages. ONE exception: Vietnamese string literals in `core` (company suffixes,
+  senior tokens, scoring signals like `"tieng anh"`, `"nam kinh nghiem"`) are domain
+  data matching the postings' language — never translate them, and comment why.
+- **Commits in English**, conventional (`feat:`, `fix:`, `chore:`), **NO
+  Co-Authored-By line**. Commit email for this repo: **tdmhale5@gmail.com** (set
+  locally; personal repo — never the company email; if a commit has the wrong
+  author, guide the user to fix it, never amend/force-push yourself).
+- The shared package (`core`) must stay **isomorphic** — no `node:*` imports (the
+  client runs scoring too). `db`/`ingest` are server-only.
+- Schema changes are new SQL files in `packages/db/migrations/` (ascending numbers);
+  never edit an applied migration. `pnpm --filter @juniorloop/db reset` wipes the
+  LOCAL schema only (it refuses non-localhost hosts).
+- Tests: Vitest in `packages/core` for all pure logic (scoring, normalization);
+  source parsers are verified with real runs, not HTML mocks (mocks rot).
 
-## Điều KHÔNG được làm
+## Never do
 
-- **Không biến thành bot tự ứng tuyển**; **không thêm LinkedIn làm nguồn** (UA 8.2
-  của LinkedIn cấm); **không copy mô tả JD** vào DB (chỉ metadata); **không lưu/hiện
-  thông tin liên hệ cá nhân** trong tin (Nghị định 13/2023).
-- Không giảm delay dưới 1s, không quét song song, không thêm retry khi bị 403 —
-  circuit breaker đang ngắt sau 3 lần là chủ ý. Bị yêu cầu dừng → tắt nguồn qua
-  bảng `nguon` (kill-switch), không tranh luận.
-- Không lưu raw HTML/payload vào DB (Neon free 1 GB).
-- Không thêm quảng cáo/kiếm tiền khi còn deploy Vercel Hobby (điều khoản
-  phi thương mại).
-- Không dùng `next/image` cho logo công ty (quota 5K transformation/tháng).
+- **Never turn this into an auto-apply bot**; **never add LinkedIn as a source**
+  (their UA 8.2 forbids it); **never copy job-description bodies** into the DB
+  (metadata only); **never store/display personal contact details** from postings
+  (Decree 13/2023).
+- Never lower the delay under 1s, scan in parallel, or retry through a 403 — the
+  circuit breaker tripping after 3 is deliberate. If a source asks us to stop,
+  flip its kill switch in the `sources` table; do not argue.
+- Never store raw HTML/payloads in the DB (Neon free is 1 GB).
+- Never add ads/monetization while deployed on Vercel Hobby (non-commercial terms).
+- Never use `next/image` for company logos (5K transformations/month quota).
 
-## Kiến trúc & lối đi quen
+## Architecture & well-trodden paths
 
-- Nguồn mới = 1 file trong `packages/ingest/src/nguon/` export `HamNguon`, đăng ký
-  vào `NGUON` ở `src/index.ts`, thêm dòng INSERT vào migration mới. Fail mềm từng
-  nguồn — một nguồn chết không được kéo sập lần quét.
-- Key chống trùng trong-nguồn: `UNIQUE(nguon, nguon_id)`. Tin thấy lại → upsert mở
-  lại + cập nhật `last_seen_at`, giữ `first_seen_at`.
-- Tin senior gắn cờ `la_senior`, KHÔNG xoá. Hết hạn (`het_han`) chỉ đặt khi ≥2 lần
-  quét ok liên tiếp không thấy lại (logic tuần 2 — xem ROADMAP).
-- Web đọc DB duy nhất qua `apps/web/lib/data.ts` (unstable_cache tag `viec`);
-  ingest xong gọi `POST /api/revalidate?secret=…`. Đừng query DB trực tiếp trong
-  page/component.
-- Env: `.env` ở GỐC monorepo (next.config.ts tự nạp); xem `.env.example`.
+- A new source = one file in `packages/ingest/src/sources/` exporting a `SourceFn`,
+  registered in `SOURCES` in `src/index.ts`, plus an INSERT in a new migration.
+  Sources fail soft — one dead source must not kill the scan.
+- In-source dedupe key: `UNIQUE(source, source_id)`. A job seen again → upsert
+  reopens it + bumps `last_seen_at`, keeping `first_seen_at`.
+- Senior postings get the `is_senior` flag, NEVER deleted. `expired` status is only
+  set after ≥2 consecutive successful scans without the job (week-2 logic — see
+  ROADMAP).
+- The web app reads the DB only through `apps/web/lib/data.ts` (unstable_cache,
+  tag `jobs`); ingest calls `POST /api/revalidate?secret=…` when done. Never query
+  the DB directly from a page/component.
+- Env: `.env` at the monorepo ROOT (next.config.ts loads it); see `.env.example`.
 
-## Lệnh hay dùng
+## Common commands
 
 ```bash
-pnpm db:migrate                         # tạo DB nếu chưa có + áp migrations
-pnpm quet --nguon topdev                # quét 1 nguồn (KHÔNG cần "--" trước flag)
-pnpm quet --nguon itviec,topcv          # nguồn HTML (máy cá nhân)
-pnpm test && pnpm typecheck             # trước khi commit
-pnpm dev                                # web ở localhost:3000
+pnpm db:migrate                       # create DB if missing + apply migrations
+pnpm scan --sources topdev            # scan one source (no "--" before flags)
+pnpm scan --sources itviec,topcv      # HTML sources (personal machine)
+pnpm test && pnpm typecheck           # before every commit
+pnpm dev                              # web at localhost:3000
 ```

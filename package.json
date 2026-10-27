@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "pnpm --filter web dev",
     "build": "pnpm --filter web build",
-    "quet": "pnpm --filter @juniorloop/ingest quet",
+    "scan": "pnpm --filter @juniorloop/ingest scan",
     "db:migrate": "pnpm --filter @juniorloop/db migrate",
     "test": "pnpm --filter @juniorloop/core test",
     "typecheck": "pnpm -r typecheck"

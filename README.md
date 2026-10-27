@@ -1,84 +1,86 @@
 # JuniorLoop
 
-> **EN —** A job board for junior developers in Vietnam: ingests postings from TopDev
-> (public JSON API, runs on GitHub Actions) and ITviec/TopCV (public HTML, runs from a
-> residential machine — hybrid by design, since datacenter IPs get challenged), stores
-> metadata-only in PostgreSQL (Kysely), serves a Next.js ISR frontend with client-side
-> personal fit-scoring (localStorage profile, no accounts, no PII). Non-commercial.
-> Docs below in Vietnamese.
+A job board for junior developers in Vietnam: aggregates postings from **TopDev, ITviec
+and TopCV** every 6 hours, filters for **genuinely junior roles** (senior postings are
+flagged and hidden, never deleted), and **scores every posting** against a profile you
+define — computed in your own browser, with no account and no data sent anywhere.
 
-Job board cho junior dev Việt Nam: gom tin từ **TopDev, ITviec, TopCV** mỗi 6 tiếng,
-lọc tin **junior thật sự** (tin senior bị gắn cờ và ẩn), và **chấm điểm độ hợp** của
-từng tin theo hồ sơ bạn khai — tính ngay trong trình duyệt, không tài khoản, không
-gửi dữ liệu đi đâu.
+## Run it locally
 
-## Chạy local
-
-Cần Node ≥ 22, pnpm ≥ 9, PostgreSQL (local hoặc [Neon](https://neon.tech) free).
+Requires Node ≥ 22, pnpm ≥ 9, PostgreSQL (local, or [Neon](https://neon.tech) free tier).
 
 ```bash
-cp .env.example .env        # sửa DATABASE_URL nếu cần
+cp .env.example .env        # adjust DATABASE_URL if needed
 pnpm install
-pnpm db:migrate             # tự tạo database nếu chưa có + áp schema
-pnpm quet                   # quét cả 3 nguồn lần đầu (vài phút, có delay lịch sự)
+pnpm db:migrate             # creates the database if missing + applies schema
+pnpm scan                   # first scan of all 3 sources (takes minutes — polite delays)
 pnpm dev                    # http://localhost:3000
 ```
 
-## Kiến trúc
+## Architecture
 
 ```
-GitHub Actions (cron 6h) ──ingest topdev──┐
-                                          ├─→ PostgreSQL (Neon) ─→ Next.js ISR (Vercel)
-Máy cá nhân (schtasks)  ──ingest itviec/topcv─┘        ↑                │
-                                          └── POST /api/revalidate ←────┘ (tag 'viec')
+GitHub Actions (6h cron) ──scan topdev──┐
+                                        ├─→ PostgreSQL (Neon) ─→ Next.js ISR (Vercel)
+Personal machine (Task  ──scan itviec/topcv─┘        ↑                │
+Scheduler)                              └── POST /api/revalidate ←────┘ (tag 'jobs')
 ```
 
-| Package | Vai trò |
+| Package | Role |
 |---|---|
-| `packages/core` | Chuẩn hoá (bỏ dấu, chuẩn hoá công ty), nhận diện senior, **chấm điểm** — thuần, isomorphic, có Vitest |
-| `packages/db` | Kysely types + migrations; bảng `nguon` là **kill-switch** từng nguồn |
-| `packages/ingest` | CLI quét: `pnpm quet --nguon topdev --tu-khoa nodejs,reactjs`; circuit breaker ngắt khi 403×3 |
-| `apps/web` | List + lọc + sort theo điểm; `/ho-so` (localStorage); `/trang-thai` (pipeline); `/nguyen-tac` |
+| `packages/core` | Normalization (diacritics, company names), senior detection, **fit scoring** — pure, isomorphic, unit-tested |
+| `packages/db` | Kysely types + migrations; the `sources` table is a per-source **kill switch** |
+| `packages/ingest` | Scan CLI: `pnpm scan --sources topdev --keywords nodejs,reactjs`; circuit breaker trips at 403×3 |
+| `apps/web` | Job list with filters + fit-score sorting; `/profile` (localStorage); `/status` (pipeline); `/principles` |
 
-**Vì sao hybrid?** GitHub Actions dùng IP datacenter Azure — Cloudflare của các trang
-HTML nhiều khả năng chặn. Nguồn API chạy CI; nguồn HTML chạy từ máy cá nhân (IP dân
-cư) bằng đúng CLI đó. Workflow `tham-do` curl thử 4 nguồn từ runner để kiểm chứng
-thay vì đoán.
+**Why hybrid ingestion?** GitHub Actions runners use Azure datacenter IPs — the
+HTML sources sit behind Cloudflare and are likely to challenge them. API sources run
+on CI; HTML sources run from a residential machine using the exact same CLI. The
+`probe-sources` workflow curls all four sources from a runner so the split is
+measured, not guessed.
 
-Đặt lịch nguồn HTML trên Windows:
+Scheduling the HTML sources on Windows:
 
 ```powershell
-schtasks /Create /TN "JuniorLoopQuet" /SC DAILY /ST 08:30 /TR "cmd /c cd /d D:\TranBaoPhuc\juniorloop && pnpm quet --nguon itviec,topcv" /F
+schtasks /Create /TN "JuniorLoopScan" /SC DAILY /ST 08:30 /TR "cmd /c cd /d D:\TranBaoPhuc\juniorloop && pnpm scan --sources itviec,topcv" /F
 ```
 
-## Đạo đức quét — đọc trước khi fork
+A note on the codebase: identifiers and docs are English; the Vietnamese string
+literals inside `core` (company suffixes, senior tokens, scoring signals like
+`"tieng anh"`) are **domain data, kept on purpose** — they match the language the
+job postings are written in.
 
-Đây là phần quan trọng nhất của repo, không phải phần kỹ thuật:
+## Scraping ethics — read this before forking
 
-- **Chỉ metadata, luôn link-out.** Không copy mô tả JD (tác phẩm được bảo hộ); không
-  lưu thông tin liên hệ cá nhân trong tin (Nghị định 13/2023). JuniorLoop đưa người
-  dùng *đến* trang nguồn, không thay thế họ.
-- **Lịch sự là điều kiện tồn tại**: 4 lần/ngày, delay ≥1s giữa request, UA ghi danh
-  tính, không quét sau đăng nhập, không vượt CAPTCHA, circuit breaker dừng ngay khi
-  bị chặn — và không retry.
-- **Kill-switch**: trang nguồn yêu cầu dừng → `UPDATE nguon SET enabled_ingest=false,
-  enabled_hien_thi=false WHERE ma='...'` — có hiệu lực không cần deploy.
-- **VietnamWorks bị tắt chủ động** dù API gọi được: API công khai của họ giấu jobUrl —
-  chúng tôi tôn trọng tín hiệu đó thay vì dựng lại link.
-- **Không phải bot ứng tuyển** và sẽ không bao giờ là: tự động hoá dừng ở khâu *tìm*,
-  khâu *nộp* là của con người. Không có nguồn LinkedIn (ToS của họ cấm).
+This is the most important part of the repo, not the technical part:
 
-## Deploy (0đ/tháng)
+- **Metadata only, always link out.** No copying job descriptions (copyrighted works);
+  no storing personal contact details found in postings (Vietnam's PDPD, Decree
+  13/2023). JuniorLoop sends readers *to* the source sites, it does not replace them.
+- **Politeness is the condition of existence**: 4 scans/day, ≥1s delay between
+  requests, a self-identifying User-Agent, no scanning behind logins, no CAPTCHA
+  workarounds, and a circuit breaker that stops — without retrying — the moment a
+  source blocks us.
+- **Kill switch**: a source asks us to stop → `UPDATE sources SET ingest_enabled=false,
+  display_enabled=false WHERE code='...'` — effective immediately, no deploy.
+- **VietnamWorks is deliberately disabled** even though its API responds: that public
+  API hides job URLs — we respect the signal instead of reconstructing links.
+- **This is not, and will never be, an auto-apply bot**: automation stops at
+  *finding* jobs; *applying* belongs to humans. There is no LinkedIn source (their
+  ToS forbids it).
 
-1. [Neon](https://neon.tech) free → tạo project, lấy `DATABASE_URL`, chạy
-   `pnpm db:migrate` trỏ vào đó.
-2. [Vercel](https://vercel.com) Hobby → import repo, root `apps/web`, thêm env
+## Deploy ($0/month)
+
+1. [Neon](https://neon.tech) free → create a project, grab `DATABASE_URL`, run
+   `pnpm db:migrate` against it.
+2. [Vercel](https://vercel.com) Hobby → import the repo, root `apps/web`, add env vars
    `DATABASE_URL`, `REVALIDATE_SECRET`, `NEXT_PUBLIC_BASE_URL`.
-   **Hobby là phi thương mại — không gắn quảng cáo.**
+   **Hobby is non-commercial — no ads, ever, on this plan.**
 3. GitHub repo → Settings → Secrets: `DATABASE_URL`, `REVALIDATE_URL`
-   (https://&lt;app&gt;.vercel.app), `REVALIDATE_SECRET` → bật workflow `quet-topdev`.
-4. Lưu ý: schedule của Actions tự tắt nếu repo im 60 ngày — GitHub sẽ gửi mail.
+   (https://&lt;app&gt;.vercel.app), `REVALIDATE_SECRET` → enable the `scan-topdev` workflow.
+4. Heads-up: Actions schedules auto-disable after 60 days of repo inactivity — GitHub
+   emails you first.
 
-## Giấy phép
+## License
 
-MIT — © 2026 Tran Bao Phuc. Xem thêm [ROADMAP.md](ROADMAP.md) và [CLAUDE.md](CLAUDE.md).
+MIT — © 2026 Tran Bao Phuc. See also [ROADMAP.md](ROADMAP.md) and [CLAUDE.md](CLAUDE.md).

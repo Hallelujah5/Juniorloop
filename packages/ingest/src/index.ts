@@ -1,9 +1,9 @@
 /**
- * CLI quét tin — chạy được cả GitHub Actions (nguồn API) lẫn máy cá nhân (nguồn HTML):
- *   pnpm quet -- --nguon topdev            # trên CI
- *   pnpm quet -- --nguon itviec,topcv      # trên máy cá nhân (schtasks)
- *   pnpm quet -- --tu-khoa nodejs,reactjs --cho 2
- * Tôn trọng kill-switch: nguồn có enabled_ingest=false trong DB sẽ bị bỏ qua.
+ * Scan CLI — runs on GitHub Actions (API sources) and on a personal machine (HTML sources):
+ *   pnpm scan --sources topdev            # on CI
+ *   pnpm scan --sources itviec,topcv      # on the personal machine (Task Scheduler)
+ *   pnpm scan --keywords nodejs,reactjs --delay 2
+ * Respects the kill switch: sources with ingest_enabled=false in the DB are skipped.
  */
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,81 +11,81 @@ import { config } from 'dotenv'
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '.env') })
 
 import { parseArgs } from 'node:util'
-import { taoDb } from '@juniorloop/db'
-import { NguonBiChan } from './http'
-import { quetItviec } from './nguon/itviec'
-import { quetTopcv } from './nguon/topcv'
-import { quetTopdev } from './nguon/topdev'
-import type { HamNguon } from './nguon/types'
-import { ghiTin } from './upsert'
+import { createDb } from '@juniorloop/db'
+import { SourceBlocked } from './http'
+import { fetchItviec } from './sources/itviec'
+import { fetchTopcv } from './sources/topcv'
+import { fetchTopdev } from './sources/topdev'
+import type { SourceFn } from './sources/types'
+import { upsertJobs } from './upsert'
 
-const NGUON: Record<string, HamNguon> = {
-  topdev: quetTopdev,
-  itviec: quetItviec,
-  topcv: quetTopcv,
+const SOURCES: Record<string, SourceFn> = {
+  topdev: fetchTopdev,
+  itviec: fetchItviec,
+  topcv: fetchTopcv,
 }
 
 const { values: arg } = parseArgs({
   options: {
-    nguon: { type: 'string', default: Object.keys(NGUON).join(',') },
-    'tu-khoa': { type: 'string', default: 'nodejs,reactjs,typescript,fullstack' },
-    cho: { type: 'string', default: '1.5' },
+    sources: { type: 'string', default: Object.keys(SOURCES).join(',') },
+    keywords: { type: 'string', default: 'nodejs,reactjs,typescript,fullstack' },
+    delay: { type: 'string', default: '1.5' },
   },
 })
 
-async function goiRevalidate() {
+async function callRevalidate() {
   const url = process.env.REVALIDATE_URL
   const secret = process.env.REVALIDATE_SECRET
   if (!url || !secret) return
   try {
     await fetch(`${url}/api/revalidate?secret=${encodeURIComponent(secret)}`, { method: 'POST' })
-    console.log('[revalidate] đã gọi web làm mới cache')
+    console.log('[revalidate] asked the web app to refresh its cache')
   } catch (e) {
-    console.log('[revalidate] lỗi (không chặn quét):', (e as Error).message)
+    console.log('[revalidate] failed (does not block the scan):', (e as Error).message)
   }
 }
 
 async function main() {
-  const db = taoDb()
-  const tuKhoa = arg['tu-khoa']!.split(',').map((s) => s.trim()).filter(Boolean)
-  const choGiay = Number(arg.cho) || 1.5
-  const yeuCau = arg.nguon!.split(',').map((s) => s.trim()).filter(Boolean)
+  const db = createDb()
+  const keywords = arg.keywords!.split(',').map((s) => s.trim()).filter(Boolean)
+  const delaySeconds = Number(arg.delay) || 1.5
+  const requested = arg.sources!.split(',').map((s) => s.trim()).filter(Boolean)
 
-  const batDuoc = await db
-    .selectFrom('nguon')
-    .select(['ma'])
-    .where('enabled_ingest', '=', true)
-    .where('ma', 'in', yeuCau)
+  const enabled = await db
+    .selectFrom('sources')
+    .select(['code'])
+    .where('ingest_enabled', '=', true)
+    .where('code', 'in', requested)
     .execute()
-  const chay = batDuoc.map((r) => r.ma).filter((m) => m in NGUON)
-  const biTat = yeuCau.filter((m) => !chay.includes(m))
-  if (biTat.length) console.log(`[kill-switch] bỏ qua nguồn bị tắt/không có: ${biTat.join(', ')}`)
+  const toRun = enabled.map((r) => r.code).filter((c) => c in SOURCES)
+  const skipped = requested.filter((c) => !toRun.includes(c))
+  if (skipped.length) console.log(`[kill-switch] skipping disabled/unknown sources: ${skipped.join(', ')}`)
 
-  let loi = 0
-  for (const ma of chay) {
-    const batDau = new Date()
+  let failures = 0
+  for (const code of toRun) {
+    const startedAt = new Date()
     try {
-      const tins = await NGUON[ma]!(tuKhoa, choGiay)
-      const { thay, moi } = await ghiTin(db, ma, tins)
-      await db.insertInto('lan_quet').values({
-        nguon: ma, started_at: batDau, finished_at: new Date(),
-        trang_thai: 'ok', so_tin_thay: thay, so_tin_moi: moi, loi_text: null,
+      const jobs = await SOURCES[code]!(keywords, delaySeconds)
+      const { seen, inserted } = await upsertJobs(db, code, jobs)
+      await db.insertInto('scan_runs').values({
+        source: code, started_at: startedAt, finished_at: new Date(),
+        status: 'ok', jobs_seen: seen, jobs_new: inserted, error_text: null,
       }).execute()
-      console.log(`[${ma}] ok — ${thay} tin, ${moi} mới`)
+      console.log(`[${code}] ok — ${seen} jobs, ${inserted} new`)
     } catch (e) {
-      loi += 1
-      const msg = e instanceof NguonBiChan ? e.message : String((e as Error).message)
-      await db.insertInto('lan_quet').values({
-        nguon: ma, started_at: batDau, finished_at: new Date(),
-        trang_thai: 'loi', so_tin_thay: 0, so_tin_moi: 0, loi_text: msg.slice(0, 500),
+      failures += 1
+      const msg = e instanceof SourceBlocked ? e.message : String((e as Error).message)
+      await db.insertInto('scan_runs').values({
+        source: code, started_at: startedAt, finished_at: new Date(),
+        status: 'error', jobs_seen: 0, jobs_new: 0, error_text: msg.slice(0, 500),
       }).execute()
-      console.error(`[${ma}] LỖI — ${msg}`)
+      console.error(`[${code}] ERROR — ${msg}`)
     }
   }
 
-  await goiRevalidate()
+  await callRevalidate()
   await db.destroy()
-  process.exit(loi === chay.length && chay.length > 0 ? 1 : 0)
+  process.exit(failures === toRun.length && toRun.length > 0 ? 1 : 0)
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })

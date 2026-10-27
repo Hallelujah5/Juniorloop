@@ -1,22 +1,22 @@
-/** HTTP lịch sự: UA rõ ràng, delay giữa request, circuit breaker khi bị chặn. */
+/** Polite HTTP: explicit UA, delays between requests, circuit breaker when blocked. */
 
 const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 JuniorLoop/0.1 (+aggregator ca nhan; lien he trong README)'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 JuniorLoop/0.1 (+personal aggregator; contact in README)'
 
-export class NguonBiChan extends Error {
-  constructor(nguon: string) {
-    super(`Nguồn ${nguon} trả 403/429 liên tiếp — circuit breaker ngắt, dừng quét nguồn này.`)
+export class SourceBlocked extends Error {
+  constructor(source: string) {
+    super(`Source ${source} returned 403/429 repeatedly — circuit breaker tripped, stopping this source.`)
   }
 }
 
-export function cho(giay: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, Math.max(1, giay) * 1000))
+export function sleep(seconds: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, Math.max(1, seconds) * 1000))
 }
 
-/** Đếm 403/429 liên tiếp theo nguồn; ≥3 là ngắt (tôn trọng tín hiệu chặn, không retry). */
-export function taoFetcher(nguon: string) {
-  let soLanChan = 0
-  return async function tai(url: string, init?: RequestInit): Promise<string> {
+/** Counts consecutive 403/429 per source; trips at 3 (respect the block, never retry through it). */
+export function createFetcher(source: string) {
+  let blockedCount = 0
+  return async function fetchText(url: string, init?: RequestInit): Promise<string> {
     const res = await fetch(url, {
       ...init,
       headers: {
@@ -26,12 +26,12 @@ export function taoFetcher(nguon: string) {
       },
     })
     if (res.status === 403 || res.status === 429) {
-      soLanChan += 1
-      if (soLanChan >= 3) throw new NguonBiChan(nguon)
-      throw new Error(`HTTP ${res.status} từ ${nguon}`)
+      blockedCount += 1
+      if (blockedCount >= 3) throw new SourceBlocked(source)
+      throw new Error(`HTTP ${res.status} from ${source}`)
     }
-    soLanChan = 0
-    if (!res.ok) throw new Error(`HTTP ${res.status} từ ${nguon}: ${url}`)
+    blockedCount = 0
+    if (!res.ok) throw new Error(`HTTP ${res.status} from ${source}: ${url}`)
     return res.text()
   }
 }

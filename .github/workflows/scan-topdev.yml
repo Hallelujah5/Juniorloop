@@ -1,13 +1,13 @@
-# Quét nguồn API (TopDev) mỗi 6 tiếng. Nguồn HTML (ITviec, TopCV) chạy từ máy cá nhân
-# — xem README. Phút lệch 17 để né giờ cao điểm của scheduler GitHub.
-name: quet-topdev
+# Scans the API source (TopDev) every 6 hours. HTML sources (ITviec, TopCV) run from
+# a personal machine — see README. Minute 17 avoids the scheduler's top-of-hour rush.
+name: scan-topdev
 on:
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
 
 jobs:
-  quet:
+  scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,14 +17,14 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Quét TopDev
+      - name: Scan TopDev
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           REVALIDATE_URL: ${{ secrets.REVALIDATE_URL }}
           REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "Chưa cấu hình secret DATABASE_URL (Neon) — bỏ qua, không fail."
+            echo "DATABASE_URL secret not configured (Neon) — skipping without failing."
             exit 0
           fi
-          pnpm quet --nguon topdev
+          pnpm scan --sources topdev

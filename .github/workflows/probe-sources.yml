@@ -1,15 +1,15 @@
-# Bước 0: thí nghiệm xem nguồn nào đọc được từ IP datacenter (Azure) của GitHub Actions.
-# Kết quả quyết định nguồn nào chạy CI, nguồn nào chạy từ máy cá nhân.
-name: tham-do-nguon
+# Step 0: find out which sources are readable from GitHub Actions' datacenter (Azure) IPs.
+# The result decides which sources run on CI and which run from the personal machine.
+name: probe-sources
 on: workflow_dispatch
 
 jobs:
-  tham-do:
+  probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Curl thử 4 nguồn
+      - name: Curl all four sources
         run: |
-          UA="Mozilla/5.0 (X11; Linux x86_64) JuniorLoop-ThamDo/0.1"
+          UA="Mozilla/5.0 (X11; Linux x86_64) JuniorLoop-Probe/0.1"
           for u in \
             "https://api.topdev.vn/td/v2/jobs?fields%5Bjob%5D=id,title&locale=vi_VN&page_size=1&keyword=nodejs" \
             "https://itviec.com/it-jobs/nodejs/ha-noi" \

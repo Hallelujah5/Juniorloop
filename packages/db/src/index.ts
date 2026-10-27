@@ -2,14 +2,14 @@ import { Kysely, PostgresDialect } from 'kysely'
 import pg from 'pg'
 import type { DB } from './types'
 
-export type { DB, NguonTable, ViecTable, LanQuetTable } from './types'
+export type { DB, SourcesTable, JobsTable, ScanRunsTable } from './types'
 
-/** Type kết nối cho các package khác — để họ khỏi phải phụ thuộc kysely trực tiếp. */
+/** Connection type for other packages — so they need no direct kysely dependency. */
 export type Db = Kysely<DB>
 
-/** Mỗi process một pool nhỏ — Neon free ưa ít kết nối, web ISR càng không cần nhiều. */
-export function taoDb(connectionString = process.env.DATABASE_URL): Kysely<DB> {
-  if (!connectionString) throw new Error('Thiếu DATABASE_URL (xem .env.example)')
+/** One small pool per process — Neon free prefers few connections; ISR needs even fewer. */
+export function createDb(connectionString = process.env.DATABASE_URL): Kysely<DB> {
+  if (!connectionString) throw new Error('Missing DATABASE_URL (see .env.example)')
   return new Kysely<DB>({
     dialect: new PostgresDialect({
       pool: new pg.Pool({ connectionString, max: 3 }),
