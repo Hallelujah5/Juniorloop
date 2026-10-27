@@ -1,8 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getCrawledTracks, getJobs } from '@/lib/data'
 import { CITIES, jobInCity, jobsForSkill } from '@/lib/categories'
-
-const BASE = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+import { BASE_URL as BASE } from '@/lib/base-url'
 
 /** Category pages enter the sitemap only while they have content (empty ones are noindex). */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
