@@ -19,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <div className="flex gap-4 text-sm text-stone-600">
               <Link href="/" className="hover:text-stone-900">Jobs</Link>
+              <Link href="/jobs" className="hover:text-stone-900">Browse</Link>
               <Link href="/profile" className="hover:text-stone-900">Scoring profile</Link>
               <Link href="/status" className="hover:text-stone-900">Pipeline status</Link>
               <Link href="/principles" className="hover:text-stone-900">Data principles</Link>

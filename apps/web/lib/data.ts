@@ -12,6 +12,7 @@ export type JobRow = {
   location: string | null
   skills: string[]
   isSenior: boolean
+  firstSeen: string
   lastSeen: string
 }
 
@@ -28,7 +29,7 @@ export const getJobs = unstable_cache(
       .select([
         'jobs.id', 'jobs.source', 'sources.name as source_name', 'jobs.url',
         'jobs.title_raw', 'jobs.company_raw', 'jobs.salary_raw',
-        'jobs.location', 'jobs.skills', 'jobs.is_senior', 'jobs.last_seen_at',
+        'jobs.location', 'jobs.skills', 'jobs.is_senior', 'jobs.first_seen_at', 'jobs.last_seen_at',
       ])
       .where('jobs.status', '=', 'open')
       .where('sources.display_enabled', '=', true)
@@ -46,6 +47,7 @@ export const getJobs = unstable_cache(
       location: r.location,
       skills: r.skills,
       isSenior: r.is_senior,
+      firstSeen: r.first_seen_at.toISOString(),
       lastSeen: r.last_seen_at.toISOString(),
     }))
   },

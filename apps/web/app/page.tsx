@@ -1,4 +1,6 @@
-import { getJobs } from '@/lib/data'
+import Link from 'next/link'
+import { getCrawledTracks, getJobs } from '@/lib/data'
+import { prettySkill } from '@/lib/categories'
 import { JobList } from '@/components/JobList'
 
 type SP = Promise<Record<string, string | undefined>>
@@ -9,7 +11,7 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
   const source = sp.source ?? ''
   const showSenior = sp.senior === '1'
 
-  const all = await getJobs()
+  const [all, tracks] = await Promise.all([getJobs(), getCrawledTracks()])
   const jobs = all.filter((j) => {
     if (!showSenior && j.isSenior) return false
     if (source && j.source !== source) return false
@@ -58,6 +60,18 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
       </form>
 
       <JobList jobs={jobs} />
+
+      <section className="mt-8 border-t border-stone-200 pt-5">
+        <h2 className="text-sm font-semibold text-stone-700">Browse by skill</h2>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {tracks.flatMap((t) => t.keywords).map((skill) => (
+            <Link key={skill} href={`/jobs/${skill}`}
+              className="rounded-full border border-stone-200 bg-white px-2.5 py-1 text-xs text-stone-600 hover:border-stone-400">
+              {prettySkill(skill)}
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

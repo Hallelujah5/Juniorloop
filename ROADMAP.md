@@ -47,8 +47,12 @@ fetches against the source sites.
       scans of their source. Runs at the end of every scan; re-sighting reopens.
       Verified: backdated legacy job expired, backdated game-track job survived
       (its track had only 1 run). /status shows open vs no-longer-seen counts.
-- [ ] Category pages `/jobs/{skill}` and `/jobs/{skill}/{city}` — where the SEO value
-      lives (posting counts, salary stats, ItemList).
+- [x] Category pages — done 2026-10-27: `/jobs` (browse by track), `/jobs/{skill}`
+      and `/jobs/{skill}/{city}` (ha-noi, ho-chi-minh, da-nang, remote). Slugs come
+      from `scan_keywords` with `dynamicParams=false` (no doorway URLs); matching
+      reuses core's synonym/boundary machinery (`jobMatchesSkill`); stats: open,
+      new-this-week, %-salary-disclosed, senior-hidden; BreadcrumbList + ItemList
+      JSON-LD; empty pages go `noindex` and drop out of the sitemap.
 - [ ] ITviec: extract the company name from the slug (currently "(see posting)").
 - [ ] Run `probe-sources` on Actions → record the CI vs home-machine split in README.
 

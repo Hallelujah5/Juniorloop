@@ -43,6 +43,25 @@ function matches(text: string, skill: string): boolean {
   return variants.some((v) => hasToken(text, v))
 }
 
+function jobText(job: JobInput): string {
+  return ' ' + removeDiacritics(
+    [job.title, job.company, job.salary ?? '', job.location ?? '', (job.skills ?? []).join(' ')].join(' '),
+  ) + ' '
+}
+
+/**
+ * Does one posting mention one skill? Powers the /jobs/{skill} category pages.
+ * Accepts slug form ("react-native", "data-engineer") by also trying the
+ * dashes-to-spaces variant.
+ */
+export function jobMatchesSkill(job: JobInput, skill: string): boolean {
+  const s = removeDiacritics(skill)
+  const variants = new Set(SYNONYMS[s] ?? [s])
+  if (s.includes('-')) variants.add(s.replace(/-/g, ' '))
+  const text = jobText(job)
+  return [...variants].some((v) => hasToken(text, v))
+}
+
 /**
  * Score how well a posting fits a profile. Pure; runs on server and client.
  * +3 per primary skill, +1 per secondary skill, +2 for junior signals, +2 for
@@ -50,7 +69,7 @@ function matches(text: string, skill: string): boolean {
  * demands.
  */
 export function scoreJob(job: JobInput, profile: Profile): number {
-  const text = ' ' + removeDiacritics([job.title, job.company, job.salary ?? '', job.location ?? '', (job.skills ?? []).join(' ')].join(' ')) + ' '
+  const text = jobText(job)
   let score = 0
   for (const skill of profile.primaryStack) if (matches(text, removeDiacritics(skill))) score += 3
   for (const skill of profile.secondaryStack) if (matches(text, removeDiacritics(skill))) score += 1

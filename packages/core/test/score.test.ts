@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { scoreJob } from '../src/score'
+import { jobMatchesSkill, scoreJob } from '../src/score'
 import { DEFAULT_PROFILE } from '../src/types'
 
 const matchingJob = {
@@ -46,5 +46,16 @@ describe('scoreJob', () => {
   it('word boundaries: "intern" never matches "International"', () => {
     const profile = { primaryStack: [], secondaryStack: [], prefersEnglish: false }
     expect(scoreJob({ title: 'Backend Developer', company: 'SETA International' }, profile)).toBe(0)
+  })
+})
+
+describe('jobMatchesSkill', () => {
+  it('matches synonyms and dashed slugs', () => {
+    expect(jobMatchesSkill({ title: 'Node.js Developer', company: 'X' }, 'nodejs')).toBe(true)
+    expect(jobMatchesSkill({ title: 'React Native Developer', company: 'X' }, 'react-native')).toBe(true)
+    expect(jobMatchesSkill({ title: 'ReactJS Developer', company: 'X' }, 'react-native')).toBe(false)
+  })
+  it('keeps word boundaries', () => {
+    expect(jobMatchesSkill({ title: 'Community Manager', company: 'X' }, 'unity')).toBe(false)
   })
 })
