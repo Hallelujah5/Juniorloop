@@ -1,0 +1,30 @@
+# Quét nguồn API (TopDev) mỗi 6 tiếng. Nguồn HTML (ITviec, TopCV) chạy từ máy cá nhân
+# — xem README. Phút lệch 17 để né giờ cao điểm của scheduler GitHub.
+name: quet-topdev
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  quet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Quét TopDev
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REVALIDATE_URL: ${{ secrets.REVALIDATE_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Chưa cấu hình secret DATABASE_URL (Neon) — bỏ qua, không fail."
+            exit 0
+          fi
+          pnpm quet --nguon topdev

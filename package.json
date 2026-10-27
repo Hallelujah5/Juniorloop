@@ -1,0 +1,17 @@
+{
+  "name": "juniorloop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "quet": "pnpm --filter @juniorloop/ingest quet",
+    "db:migrate": "pnpm --filter @juniorloop/db migrate",
+    "test": "pnpm --filter @juniorloop/core test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "packageManager": "pnpm@12.11.2",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp"]
+  }
+}

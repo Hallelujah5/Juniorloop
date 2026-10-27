@@ -1,0 +1,20 @@
+{
+  "name": "@juniorloop/ingest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "quet": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@juniorloop/core": "workspace:*",
+    "@juniorloop/db": "workspace:*",
+    "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

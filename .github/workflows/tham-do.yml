@@ -1,0 +1,21 @@
+# Bước 0: thí nghiệm xem nguồn nào đọc được từ IP datacenter (Azure) của GitHub Actions.
+# Kết quả quyết định nguồn nào chạy CI, nguồn nào chạy từ máy cá nhân.
+name: tham-do-nguon
+on: workflow_dispatch
+
+jobs:
+  tham-do:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Curl thử 4 nguồn
+        run: |
+          UA="Mozilla/5.0 (X11; Linux x86_64) JuniorLoop-ThamDo/0.1"
+          for u in \
+            "https://api.topdev.vn/td/v2/jobs?fields%5Bjob%5D=id,title&locale=vi_VN&page_size=1&keyword=nodejs" \
+            "https://itviec.com/it-jobs/nodejs/ha-noi" \
+            "https://www.topcv.vn/tim-viec-lam-nodejs-tai-ha-noi-kl1" \
+            "https://ms.vietnamworks.com/job-search/v1.0/search"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 -A "$UA" "$u" || echo "ERR")
+            echo "$code  $u"
+            sleep 2
+          done
