@@ -13,20 +13,21 @@ import type { Db } from './index'
  * 72-hour guard.
  */
 export async function expireStaleJobs(db: Db): Promise<{ tracked: number; legacy: number }> {
+  // Schemas are explicit: poolers drop search_path (see createDb).
   const tracked = await sql`
-    UPDATE jobs SET status = 'expired'
+    UPDATE public.jobs SET status = 'expired'
     WHERE status = 'open' AND last_track IS NOT NULL
       AND last_seen_at < now() - interval '48 hours'
-      AND (SELECT count(*) FROM scan_runs r
+      AND (SELECT count(*) FROM public.scan_runs r
            WHERE r.source = jobs.source AND r.track = jobs.last_track
              AND r.status = 'ok' AND r.started_at > jobs.last_seen_at) >= 2
   `.execute(db)
 
   const legacy = await sql`
-    UPDATE jobs SET status = 'expired'
+    UPDATE public.jobs SET status = 'expired'
     WHERE status = 'open' AND last_track IS NULL
       AND last_seen_at < now() - interval '72 hours'
-      AND (SELECT count(*) FROM scan_runs r
+      AND (SELECT count(*) FROM public.scan_runs r
            WHERE r.source = jobs.source
              AND r.status = 'ok' AND r.started_at > jobs.last_seen_at) >= 2
   `.execute(db)

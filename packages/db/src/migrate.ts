@@ -40,11 +40,12 @@ async function main() {
 
   const client = new pg.Client({ connectionString: url })
   await client.connect()
-  await client.query(`CREATE TABLE IF NOT EXISTS _migrations (
+  // Explicit schemas everywhere: pooled endpoints drop search_path.
+  await client.query(`CREATE TABLE IF NOT EXISTS public._migrations (
     name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`)
 
   const applied = new Set(
-    (await client.query('SELECT name FROM _migrations')).rows.map((r) => r.name as string),
+    (await client.query('SELECT name FROM public._migrations')).rows.map((r) => r.name as string),
   )
   const files = (await readdir(MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort()
 
@@ -54,8 +55,11 @@ async function main() {
     console.log(`[db] applying ${f}…`)
     await client.query('BEGIN')
     try {
+      // SET LOCAL lives and dies with this transaction, so unqualified names in
+      // migration files resolve to public even through a transaction pooler.
+      await client.query('SET LOCAL search_path TO public')
       await client.query(sql)
-      await client.query('INSERT INTO _migrations (name) VALUES ($1)', [f])
+      await client.query('INSERT INTO public._migrations (name) VALUES ($1)', [f])
       await client.query('COMMIT')
     } catch (e) {
       await client.query('ROLLBACK')
