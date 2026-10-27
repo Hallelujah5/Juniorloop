@@ -10,8 +10,8 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
 
 ## Hard conventions
 
-- **Chat language**: ask the user once whether they prefer Vietnamese or English
-  replies, then keep that choice forever.
+- **Chat language**: **English** — the owner chose this on 2026-10-27 when asked
+  (per the ask-once-keep-forever rule). Do not ask again; only the owner can change it.
 - **Everything in the repo is English**: identifiers, comments, docs, commit
   messages. ONE exception: Vietnamese string literals in `core` (company suffixes,
   senior tokens, scoring signals like `"tieng anh"`, `"nam kinh nghiem"`) are domain
