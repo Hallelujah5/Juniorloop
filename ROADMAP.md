@@ -41,8 +41,12 @@ fetches against the source sites.
       per-keyword failure skipping (a 404 keyword no longer kills a source),
       per-track freshness on /status, and honest no-coverage notices on /profile
       and the job list. Verified live: Unity profile → Unity jobs ranked on top.
-- [ ] Expiry: mark `expired` after ≥2 consecutive successful scans without the job;
-      reopening on re-sight already works in the upsert.
+- [x] Expiry — done 2026-10-27: a job expires only after ≥2 successful scans of its
+      OWN (source, track) since it was last seen, with 48h/72h time guards against
+      rapid re-runs and page-one displacement; legacy NULL-track jobs count any
+      scans of their source. Runs at the end of every scan; re-sighting reopens.
+      Verified: backdated legacy job expired, backdated game-track job survived
+      (its track had only 1 run). /status shows open vs no-longer-seen counts.
 - [ ] Category pages `/jobs/{skill}` and `/jobs/{skill}/{city}` — where the SEO value
       lives (posting counts, salary stats, ItemList).
 - [ ] ITviec: extract the company name from the slug (currently "(see posting)").

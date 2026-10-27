@@ -1,4 +1,4 @@
-import { getCrawledTracks, getScanRuns } from '@/lib/data'
+import { getCrawledTracks, getJobStats, getScanRuns } from '@/lib/data'
 
 export const metadata = { title: 'Pipeline status' }
 
@@ -11,7 +11,7 @@ function since(iso: string | null): string {
 }
 
 export default async function StatusPage() {
-  const [runs, tracks] = await Promise.all([getScanRuns(), getCrawledTracks()])
+  const [runs, tracks, stats] = await Promise.all([getScanRuns(), getCrawledTracks(), getJobStats()])
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight">Pipeline status</h1>
@@ -20,6 +20,12 @@ export default async function StatusPage() {
         grows without growing request volume. API sources run on GitHub Actions every
         6 hours; HTML sources run from a residential machine and can lag — deliberately
         (see data principles).
+      </p>
+      <p className="mt-2 text-sm text-stone-600">
+        <span className="font-semibold text-stone-800 tabular-nums">{stats.open}</span> open ·{' '}
+        <span className="tabular-nums">{stats.expired}</span> no longer seen on their source
+        (a job expires only after its own track misses it in 2+ successful scans; it
+        reopens the moment it is seen again).
       </p>
 
       <h2 className="mt-5 text-sm font-semibold text-stone-700">Crawled tracks</h2>

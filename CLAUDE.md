@@ -48,9 +48,11 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
   Sources fail soft — one dead source must not kill the scan.
 - In-source dedupe key: `UNIQUE(source, source_id)`. A job seen again → upsert
   reopens it + bumps `last_seen_at`, keeping `first_seen_at`.
-- Senior postings get the `is_senior` flag, NEVER deleted. `expired` status is only
-  set after ≥2 consecutive successful scans without the job (week-2 logic — see
-  ROADMAP).
+- Senior postings get the `is_senior` flag, NEVER deleted. Expiry (db/src/expire.ts,
+  runs after every scan): `expired` only after ≥2 successful scans of the job's own
+  (source, last_track) since last_seen_at, 48h guard (NULL-track legacy jobs: any
+  scans of the source, 72h guard). Re-sighting reopens. Never expire on "this scan
+  didn't see it" alone — scans are keyword-scoped and can fail.
 - The web app reads the DB only through `apps/web/lib/data.ts` (unstable_cache,
   tag `jobs`); ingest calls `POST /api/revalidate?secret=…` when done. Never query
   the DB directly from a page/component.

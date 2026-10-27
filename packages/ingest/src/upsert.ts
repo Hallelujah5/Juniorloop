@@ -7,6 +7,7 @@ export async function upsertJobs(
   db: Db,
   source: string,
   jobs: RawJob[],
+  track: string | null = null,
 ): Promise<{ seen: number; inserted: number }> {
   if (jobs.length === 0) return { seen: 0, inserted: 0 }
 
@@ -38,6 +39,7 @@ export async function upsertJobs(
       is_senior: isSenior(j.title),
       status: 'open' as const,
       last_seen_at: now,
+      last_track: track,
     }
     await db
       .insertInto('jobs')
@@ -55,6 +57,8 @@ export async function upsertJobs(
           is_senior: row.is_senior,
           status: 'open', // seen again → reopen, keep first_seen_at
           last_seen_at: now,
+          // An explicit --keywords run (track null) must not erase which track owns the job.
+          ...(track ? { last_track: track } : {}),
         }),
       )
       .execute()

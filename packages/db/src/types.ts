@@ -29,6 +29,8 @@ export interface JobsTable {
   last_seen_at: Date
   /** Cross-source duplicate group (week 3) — never a destructive merge. */
   dup_group: number | null
+  /** The keyword track that last saw this job; expiry counts misses per (source, track). */
+  last_track: string | null
 }
 
 export interface ScanRunsTable {

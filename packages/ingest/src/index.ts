@@ -13,7 +13,7 @@ import { config } from 'dotenv'
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '.env') })
 
 import { parseArgs } from 'node:util'
-import { createDb, type Db } from '@juniorloop/db'
+import { createDb, expireStaleJobs, type Db } from '@juniorloop/db'
 import { SourceBlocked } from './http'
 import { fetchItviec } from './sources/itviec'
 import { fetchTopcv } from './sources/topcv'
@@ -102,7 +102,7 @@ async function main() {
     const startedAt = new Date()
     try {
       const jobs = await SOURCES[code]!(keywords, delaySeconds)
-      const { seen, inserted } = await upsertJobs(db, code, jobs)
+      const { seen, inserted } = await upsertJobs(db, code, jobs, track)
       await db.insertInto('scan_runs').values({
         source: code, started_at: startedAt, finished_at: new Date(),
         status: 'ok', jobs_seen: seen, jobs_new: inserted, error_text: null, track,
@@ -126,6 +126,12 @@ async function main() {
       .set({ last_scanned_at: new Date() })
       .where('track', '=', track)
       .execute()
+  }
+
+  // Lifecycle: expire jobs their own track has missed twice (details in db/expire.ts).
+  const expired = await expireStaleJobs(db)
+  if (expired.tracked + expired.legacy > 0) {
+    console.log(`[expiry] marked ${expired.tracked + expired.legacy} job(s) as no longer seen`)
   }
 
   await callRevalidate()

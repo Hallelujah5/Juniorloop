@@ -87,6 +87,22 @@ export const getScanRuns = unstable_cache(
   { tags: ['jobs'], revalidate: 1800 },
 )
 
+export type JobStats = { open: number; expired: number }
+
+export const getJobStats = unstable_cache(
+  async (): Promise<JobStats> => {
+    const rows = await db
+      .selectFrom('jobs')
+      .select((eb) => ['status', eb.fn.countAll().as('n')])
+      .groupBy('status')
+      .execute()
+    const byStatus = Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]))
+    return { open: byStatus.open ?? 0, expired: byStatus.expired ?? 0 }
+  },
+  ['job-stats'],
+  { tags: ['jobs'], revalidate: 1800 },
+)
+
 export type TrackCoverage = { track: string; keywords: string[]; lastScanned: string | null }
 
 /** What we crawl, as data — feeds the status page and the honest no-coverage notice. */
