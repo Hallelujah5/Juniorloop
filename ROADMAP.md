@@ -10,6 +10,17 @@ upload → client-side parsing → auto-filled profile**, under the same privacy
 as everything else: the CV and the profile never leave the visitor's browser,
 nothing is stored server-side.
 
+**Priority (set 2026-10-27):** building JuniorLoop is goal #1; the owner's own job
+hunt is goal #2, served meanwhile by the tracker artifact and weekly `pnpm scan`.
+
+**Known architectural gap (the "Unity problem", found 2026-10-27):** the profile
+only *ranks* what the crawler already fetched — it never drives *retrieval*. The
+crawl keywords are a hardcoded web-dev list, so a Unity/game profile scores a
+corpus that contains no Unity jobs and silently gets noise. Fixing coverage is the
+top of week 2, and the fix is broader scheduled crawling (keyword config per track),
+NOT per-visitor live scraping — politeness rules forbid letting visitors trigger
+fetches against the source sites.
+
 ## Done (week-1 MVP — 2026-10-27)
 
 - pnpm monorepo: `core` (normalization + scoring, Vitest), `db` (Kysely + migrations,
@@ -19,9 +30,19 @@ nothing is stored server-side.
 - Workflows: `probe-sources` (datacenter-IP experiment), `scan-topdev` (6h cron), `ci`.
 - Full English pass: identifiers, schema, routes, UI copy, docs, commits
   (Vietnamese string literals in `core` kept deliberately as domain data).
+- Scoring: word-boundary token matching (unity≠opportunity, java≠javascript,
+  intern≠International) with regex cache; 14 unit tests.
 
-## Week 2 — lifecycle & category pages
+## Week 2 — retrieval coverage, lifecycle & category pages
 
+- [ ] **Retrieval coverage (the Unity problem):** move crawl keywords from the CLI
+      default into a `scan_keywords` DB table seeded per track (web, mobile,
+      game/unity, data, QA, devops…), editable without a deploy; scan each track on
+      rotation to stay within the 4-runs/day politeness budget. Show per-track
+      freshness on /status.
+- [ ] Profile UI: when a visitor's skills have no coverage in the corpus (zero
+      matches across all open jobs), say so honestly on the page instead of showing
+      noise — "we don't crawl this stack yet".
 - [ ] Expiry: mark `expired` after ≥2 consecutive successful scans without the job;
       reopening on re-sight already works in the upsert.
 - [ ] Category pages `/jobs/{skill}` and `/jobs/{skill}/{city}` — where the SEO value

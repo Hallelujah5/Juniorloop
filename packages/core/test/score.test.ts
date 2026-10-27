@@ -34,4 +34,17 @@ describe('scoreJob', () => {
     const profile = { primaryStack: ['react'], secondaryStack: [], prefersEnglish: false }
     expect(scoreJob({ title: 'ReactJS Developer', company: 'X' }, profile)).toBeGreaterThanOrEqual(3)
   })
+  it('word boundaries: "unity" never matches "opportunity"/"community"', () => {
+    const profile = { primaryStack: ['unity'], secondaryStack: [], prefersEnglish: false }
+    expect(scoreJob({ title: 'Community Manager — great opportunity', company: 'X' }, profile)).toBe(0)
+    expect(scoreJob({ title: 'Unity Game Developer', company: 'X' }, profile)).toBeGreaterThanOrEqual(3)
+  })
+  it('word boundaries: "java" never matches "javascript"', () => {
+    const profile = { primaryStack: ['java'], secondaryStack: [], prefersEnglish: false }
+    expect(scoreJob({ title: 'Javascript Developer', company: 'X' }, profile)).toBe(0)
+  })
+  it('word boundaries: "intern" never matches "International"', () => {
+    const profile = { primaryStack: [], secondaryStack: [], prefersEnglish: false }
+    expect(scoreJob({ title: 'Backend Developer', company: 'SETA International' }, profile)).toBe(0)
+  })
 })
