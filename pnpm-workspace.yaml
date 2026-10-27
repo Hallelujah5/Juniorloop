@@ -3,6 +3,6 @@ packages:
   - "packages/*"
 
 # pnpm 12: build-script allowlist lives here, not in package.json#pnpm
-onlyBuiltDependencies:
-  - esbuild
-  - sharp
+allowBuilds:
+  esbuild: true
+  sharp: true
