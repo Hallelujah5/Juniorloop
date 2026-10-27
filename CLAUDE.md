@@ -53,6 +53,12 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
   (source, last_track) since last_seen_at, 48h guard (NULL-track legacy jobs: any
   scans of the source, 72h guard). Re-sighting reopens. Never expire on "this scan
   didn't see it" alone — scans are keyword-scoped and can fail.
+- Dedupe (ingest/src/dedupe.ts + core/src/dedupe.ts, runs after every scan): block
+  on (company_norm, is_senior) + compatible cities, then titlesLookSame (Jaccard
+  ≥0.6; unions under 4 tokens need an exact set match). dup_group = min job id,
+  recomputed from scratch each run, never a destructive merge. Placeholder
+  companies ('see posting') never block together. Raise thresholds before ever
+  lowering them: a false merge costs more than a visible duplicate.
 - The web app reads the DB only through `apps/web/lib/data.ts` (unstable_cache,
   tag `jobs`); ingest calls `POST /api/revalidate?secret=…` when done. Never query
   the DB directly from a page/component.

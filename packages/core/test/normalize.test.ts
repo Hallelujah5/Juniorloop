@@ -39,6 +39,9 @@ describe('isSenior', () => {
     expect(isSenior('Fullstack Developer Leader')).toBe(true)
     expect(isSenior('Junior Fullstack Developer')).toBe(false)
   })
+  it('sees senior markers inside brackets (normalizeTitle would strip them)', () => {
+    expect(isSenior('Database Administrator (Senior)')).toBe(true)
+  })
   it('does not match substrings inside other words', () => {
     expect(isSenior('Thực tập sinh Leadgen Marketing')).toBe(false)
   })

@@ -64,8 +64,12 @@ const SENIOR_TOKENS = [
   'director', 'manager', 'cto', 'truong phong', 'truong nhom', 'quan ly',
 ]
 
-/** Is this posting aimed at experienced engineers? Flag it (NEVER delete) — hidden by default in queries. */
+/**
+ * Is this posting aimed at experienced engineers? Flag it (NEVER delete) — hidden by
+ * default in queries. Deliberately does NOT use normalizeTitle: that strips bracketed
+ * text, and "(Senior)" in brackets must still count.
+ */
 export function isSenior(title: string): boolean {
-  const t = ' ' + normalizeTitle(title) + ' '
+  const t = ' ' + removeDiacritics(title).replace(/[^a-z0-9+#. ]/g, ' ').replace(/\s+/g, ' ').trim() + ' '
   return SENIOR_TOKENS.some((tok) => t.includes(tok.endsWith(' ') || tok.endsWith('.') ? ' ' + tok : ' ' + tok + ' '))
 }

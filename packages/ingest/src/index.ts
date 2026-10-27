@@ -18,6 +18,7 @@ import { SourceBlocked } from './http'
 import { fetchItviec } from './sources/itviec'
 import { fetchTopcv } from './sources/topcv'
 import { fetchTopdev } from './sources/topdev'
+import { groupDuplicates } from './dedupe'
 import type { SourceFn } from './sources/types'
 import { upsertJobs } from './upsert'
 
@@ -133,6 +134,10 @@ async function main() {
   if (expired.tracked + expired.legacy > 0) {
     console.log(`[expiry] marked ${expired.tracked + expired.legacy} job(s) as no longer seen`)
   }
+
+  // Lifecycle: regroup cross-source duplicates (details in dedupe.ts).
+  const dup = await groupDuplicates(db)
+  console.log(`[dedupe] ${dup.groups} group(s) covering ${dup.grouped} job(s)`)
 
   await callRevalidate()
   await db.destroy()

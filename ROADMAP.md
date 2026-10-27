@@ -58,10 +58,14 @@ fetches against the source sites.
 
 ## Week 3 — dedupe & polish
 
-- [ ] Cross-source dedupe: block on `company_norm` equality + same city bucket, then
-      token-set Jaccard ≥ 0.6 over synonym-mapped titles (~15 pairs) → assign
-      `dup_group`, render one card with multiple source buttons. Never a destructive
-      merge; prefer missing a duplicate over a false merge.
+- [x] Cross-source dedupe — done 2026-10-27: blocks on (company_norm, is_senior) +
+      compatible city buckets, token-set Jaccard ≥ 0.6 over synonym-mapped,
+      stopword-free titles, PLUS a short-title guard (union < 4 tokens requires an
+      exact set match — stops "Fullstack Developer Leader" vs "Fullstack AI Leader").
+      Union-find assigns dup_group = min job id, recomputed after every scan,
+      diff-only writes, never destructive. UI renders one card with "Also posted
+      on" buttons. Live result: 9 groups / 21 jobs, all true duplicates. Side
+      catch: isSenior was blind to bracketed "(Senior)" markers — fixed.
 - [ ] City as a real filter (ITviec/TopCV currently lock Hanoi in the scan URL).
 - [ ] README: screenshots + architecture diagram.
 

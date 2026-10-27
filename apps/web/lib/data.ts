@@ -14,6 +14,7 @@ export type JobRow = {
   isSenior: boolean
   firstSeen: string
   lastSeen: string
+  dupGroup: number | null
 }
 
 /**
@@ -30,6 +31,7 @@ export const getJobs = unstable_cache(
         'jobs.id', 'jobs.source', 'sources.name as source_name', 'jobs.url',
         'jobs.title_raw', 'jobs.company_raw', 'jobs.salary_raw',
         'jobs.location', 'jobs.skills', 'jobs.is_senior', 'jobs.first_seen_at', 'jobs.last_seen_at',
+        'jobs.dup_group',
       ])
       .where('jobs.status', '=', 'open')
       .where('sources.display_enabled', '=', true)
@@ -49,6 +51,7 @@ export const getJobs = unstable_cache(
       isSenior: r.is_senior,
       firstSeen: r.first_seen_at.toISOString(),
       lastSeen: r.last_seen_at.toISOString(),
+      dupGroup: r.dup_group,
     }))
   },
   ['open-jobs'],

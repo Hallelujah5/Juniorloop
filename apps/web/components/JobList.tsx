@@ -37,9 +37,25 @@ export function JobList({ jobs }: { jobs: JobRow[] }) {
       }))
     : jobs.map((j) => ({ ...j, score: null as number | null }))
 
+  // Non-destructive dedupe: rows sharing a dup_group render as ONE card — the most
+  // recently seen row leads, the rest become "Also on …" buttons.
+  type Scored = (typeof scored)[number]
+  const byGroup = new Map<number, Scored[]>()
+  const entries: { primary: Scored; others: Scored[] }[] = []
+  for (const j of scored) {
+    if (j.dupGroup === null) { entries.push({ primary: j, others: [] }); continue }
+    const arr = byGroup.get(j.dupGroup) ?? []
+    arr.push(j)
+    byGroup.set(j.dupGroup, arr)
+  }
+  for (const [, members] of byGroup) {
+    const sorted = [...members].sort((a, b) => b.lastSeen.localeCompare(a.lastSeen))
+    entries.push({ primary: sorted[0]!, others: sorted.slice(1) })
+  }
+
   const visible = sortBy === 'score' && profile
-    ? [...scored].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    : scored
+    ? [...entries].sort((a, b) => (b.primary.score ?? 0) - (a.primary.score ?? 0))
+    : [...entries].sort((a, b) => b.primary.lastSeen.localeCompare(a.primary.lastSeen))
 
   return (
     <section className="mt-5">
@@ -60,9 +76,9 @@ export function JobList({ jobs }: { jobs: JobRow[] }) {
         </button>
       </div>
 
-      {profile && visible.length > 0 && scored.every((j) => (j.score ?? 0) < 3) && (
+      {profile && entries.length > 0 && scored.every((j) => (j.score ?? 0) < 3) && (
         <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          None of the {visible.length} open postings match your primary skills — that is
+          None of the {entries.length} open postings match your primary skills — that is
           likely a coverage gap on our side, not a bad market. Check{' '}
           <a href="/profile" className="underline">your profile page</a> to see which
           stacks we crawl today.
@@ -76,7 +92,7 @@ export function JobList({ jobs }: { jobs: JobRow[] }) {
       )}
 
       <ul className="space-y-2.5">
-        {visible.map((j) => (
+        {visible.map(({ primary: j, others }) => (
           <li key={`${j.source}-${j.id}`} className="rounded-xl border border-stone-200 bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
@@ -109,6 +125,23 @@ export function JobList({ jobs }: { jobs: JobRow[] }) {
               <div className="mt-2 flex flex-wrap gap-1">
                 {j.skills.slice(0, 8).map((s) => (
                   <span key={s} className="rounded-full border border-stone-200 px-2 py-0.5 text-xs text-stone-600">{s}</span>
+                ))}
+              </div>
+            )}
+            {others.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="text-stone-500">Also posted on:</span>
+                {others.map((o) => (
+                  <a
+                    key={`${o.source}-${o.id}`}
+                    href={o.url}
+                    target="_blank"
+                    rel="nofollow noopener"
+                    title={o.title}
+                    className="rounded-full border border-stone-300 bg-stone-50 px-2 py-0.5 font-medium text-stone-700 hover:border-stone-500"
+                  >
+                    {SOURCE_NAMES[o.source] ?? o.source} ↗
+                  </a>
                 ))}
               </div>
             )}
