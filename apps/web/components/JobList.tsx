@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DEFAULT_PROFILE, scoreJob, type Profile } from '@juniorloop/core'
+import { DEFAULT_PROFILE, scoreJob, translateMaskedSalary, type Profile } from '@juniorloop/core'
 import type { JobRow } from '@/lib/data'
 
 const SOURCE_NAMES: Record<string, string> = { topdev: 'TopDev', itviec: 'ITviec', topcv: 'TopCV' }
@@ -163,6 +163,9 @@ export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: s
       <ul className="space-y-3">
         {visible.map(({ primary: j, others }) => {
           const mark = companyMark(j.company)
+          // TopDev stars out salary digits for anonymous viewers; the mask still
+          // reveals magnitude, so show an honest range instead of "2*******".
+          const approxSalary = j.salary ? translateMaskedSalary(j.salary) : null
           return (
             <li
               key={`${j.source}-${j.id}`}
@@ -196,7 +199,16 @@ export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: s
                     </div>
                     <div className="shrink-0 text-right">
                       {j.salary ? (
-                        <p className="text-sm font-semibold text-emerald-600">{j.salary}</p>
+                        <p
+                          className="text-sm font-semibold text-emerald-600"
+                          title={
+                            approxSalary
+                              ? `The source site shows the exact salary only after login — this range is read from the masked figure it publishes (“${j.salary}”).`
+                              : undefined
+                          }
+                        >
+                          {approxSalary ?? j.salary}
+                        </p>
                       ) : (
                         <p className="text-xs text-stone-400">salary not listed</p>
                       )}
