@@ -7,3 +7,5 @@ dist/
 .vercel
 
 .deploy-secrets
+
+.env.production

@@ -10,7 +10,17 @@
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { config } from 'dotenv'
-config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '.env') })
+
+// --prod targets the production database/site: loads .env.production (gitignored)
+// instead of .env. Checked before parseArgs because dotenv must run first.
+const PROD = process.argv.includes('--prod')
+const ENV_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', PROD ? '.env.production' : '.env')
+config({ path: ENV_FILE })
+if (PROD && !process.env.DATABASE_URL) {
+  console.error('--prod requires .env.production at the repo root (see README)')
+  process.exit(1)
+}
+if (PROD) console.log('[env] PRODUCTION — using .env.production')
 
 import { parseArgs } from 'node:util'
 import { createDb, expireStaleJobs, type Db } from '@juniorloop/db'
@@ -34,6 +44,7 @@ const { values: arg } = parseArgs({
     keywords: { type: 'string' },
     track: { type: 'string' },
     delay: { type: 'string', default: '1.5' },
+    prod: { type: 'boolean', default: false }, // consumed above, pre-dotenv
   },
 })
 

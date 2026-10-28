@@ -39,10 +39,14 @@ on CI; HTML sources run from a residential machine using the exact same CLI. The
 `probe-sources` workflow curls all four sources from a runner so the split is
 measured, not guessed.
 
+Home-machine scans target production with `--prod`, which reads `.env.production`
+(gitignored; holds the production `DATABASE_URL`, `REVALIDATE_URL`,
+`REVALIDATE_SECRET`). Without the flag, scans hit your local dev database.
+
 Scheduling the HTML sources on Windows:
 
 ```powershell
-schtasks /Create /TN "JuniorLoopScan" /SC DAILY /ST 08:30 /TR "cmd /c cd /d D:\TranBaoPhuc\juniorloop && pnpm scan --sources itviec,topcv" /F
+schtasks /Create /TN "JuniorLoopScan" /SC DAILY /ST 08:30 /TR "cmd /c cd /d D:\TranBaoPhuc\juniorloop && pnpm scan --prod --sources itviec,topcv" /F
 ```
 
 A note on the codebase: identifiers and docs are English; the Vietnamese string
