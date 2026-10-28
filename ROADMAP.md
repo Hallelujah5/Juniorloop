@@ -68,7 +68,11 @@ fetches against the source sites.
       diff-only writes, never destructive. UI renders one card with "Also posted
       on" buttons. Live result: 9 groups / 21 jobs, all true duplicates. Side
       catch: isSenior was blind to bracketed "(Senior)" markers — fixed.
-- [ ] City as a real filter (ITviec/TopCV currently lock Hanoi in the scan URL).
+- [x] Multi-city scanning + home city filter — done 2026-10-28: ITviec/TopCV scan
+      Hà Nội, Hồ Chí Minh and Đà Nẵng per run (slugs PROBED, not guessed — TopCV
+      keys on non-alphabetical kl{N} codes, Đà Nẵng is kl8; ITviec soft-404s bad
+      slugs with HTTP 200). Multi-city jobs keep one row with merged locations.
+      Home page gained a city select. Pages per HTML scan ×3; delays unchanged.
 - [ ] README: screenshots + architecture diagram.
 
 ## Before using as a portfolio piece

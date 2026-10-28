@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getCrawledTracks, getJobs } from '@/lib/data'
-import { prettySkill } from '@/lib/categories'
+import { CITIES, jobInCity, prettySkill, type CitySlug } from '@/lib/categories'
 import { JobList } from '@/components/JobList'
 
 type SP = Promise<Record<string, string | undefined>>
@@ -9,12 +9,14 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams
   const q = (sp.q ?? '').toLowerCase().trim()
   const source = sp.source ?? ''
+  const city = CITIES.some((c) => c.slug === sp.city) ? (sp.city as CitySlug) : ''
   const showSenior = sp.senior === '1'
 
   const [all, tracks] = await Promise.all([getJobs(), getCrawledTracks()])
   const jobs = all.filter((j) => {
     if (!showSenior && j.isSenior) return false
     if (source && j.source !== source) return false
+    if (city && !jobInCity(j, city)) return false
     if (q) {
       const text = `${j.title} ${j.company} ${j.skills.join(' ')}`.toLowerCase()
       if (!q.split(/\s+/).every((term) => text.includes(term))) return false
@@ -51,6 +53,12 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
           <option value="topdev">TopDev</option>
           <option value="itviec">ITviec</option>
           <option value="topcv">TopCV</option>
+        </select>
+        <select name="city" defaultValue={city} className="rounded-lg border border-stone-300 bg-white px-2 py-2">
+          <option value="">All cities</option>
+          {CITIES.map((c) => (
+            <option key={c.slug} value={c.slug}>{c.name}</option>
+          ))}
         </select>
         <label className="flex items-center gap-1.5 text-stone-600">
           <input type="checkbox" name="senior" value="1" defaultChecked={showSenior} />

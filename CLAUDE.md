@@ -46,6 +46,10 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
 - A new source = one file in `packages/ingest/src/sources/` exporting a `SourceFn`,
   registered in `SOURCES` in `src/index.ts`, plus an INSERT in a new migration.
   Sources fail soft — one dead source must not kill the scan.
+- City slugs live in `sources/cities.ts` and are VERIFIED DATA — probe a URL and
+  read its <title> before adding one, never guess: TopCV ignores the slug text and
+  keys on non-alphabetical kl{N} codes (Đà Nẵng is kl8, kl3 is Bình Dương), and
+  ITviec soft-404s wrong slugs with HTTP 200.
 - In-source dedupe key: `UNIQUE(source, source_id)`. A job seen again → upsert
   reopens it + bumps `last_seen_at`, keeping `first_seen_at`.
 - Senior postings get the `is_senior` flag, NEVER deleted. Expiry (db/src/expire.ts,
