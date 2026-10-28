@@ -72,6 +72,7 @@ pnpm scan                             # rotation: least-recently-scanned track
 pnpm scan --track game                # force one track
 pnpm scan --keywords unity,unreal     # explicit keywords (no rotation bookkeeping)
 pnpm scan --sources topdev            # limit sources (CI runs this; no "--" before flags)
+pnpm scan --prod --sources itviec,topcv  # HTML sources into PRODUCTION (.env.production)
 pnpm test && pnpm typecheck           # before every commit
 pnpm dev                              # web at localhost:3000
 ```
