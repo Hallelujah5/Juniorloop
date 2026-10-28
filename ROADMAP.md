@@ -33,6 +33,16 @@ fetches against the source sites.
 - Scoring: word-boundary token matching (unity≠opportunity, java≠javascript,
   intern≠International) with regex cache; 14 unit tests.
 
+## Post-launch polish (2026-10-28)
+
+- [x] Job card redesign (initials marks, salary top-right, honest "salary not
+      listed", chips, dated footer) + Be Vietnam Pro via next/font (self-hosted,
+      zero runtime font requests).
+- [x] "New since your last visit" badge + counter — localStorage-only visit
+      tracking (a visit ends after 60 quiet minutes, so refreshes never clear
+      badges mid-session); first visit shows nothing; counter counts deduped
+      CARDS so it always equals visible badges.
+
 ## Week 2 — retrieval coverage, lifecycle & category pages
 
 - [x] **Retrieval coverage (the Unity problem)** — done 2026-10-27: `scan_keywords`

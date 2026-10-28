@@ -49,11 +49,48 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`
 }
 
+/**
+ * A "visit" ends after 60 quiet minutes — so refreshing or hopping between
+ * pages never clears the badges mid-session, but tomorrow's coffee check
+ * highlights everything that appeared since today's. localStorage only;
+ * first-time visitors get no badges (everything "new" means nothing is).
+ */
+const VISIT_GAP_MS = 60 * 60_000
+
+function trackVisit(): number | null {
+  try {
+    const now = Date.now()
+    const raw = localStorage.getItem('visits')
+    const v = raw ? (JSON.parse(raw) as { current: number; previous: number | null }) : null
+    if (!v || typeof v.current !== 'number') {
+      localStorage.setItem('visits', JSON.stringify({ current: now, previous: null }))
+      return null
+    }
+    if (now - v.current > VISIT_GAP_MS) {
+      localStorage.setItem('visits', JSON.stringify({ current: now, previous: v.current }))
+      return v.current
+    }
+    return v.previous
+  } catch {
+    return null // storage blocked — feature degrades to nothing, page works
+  }
+}
+
 /** Scores render after mount (the profile lives in localStorage) — the server renders newest-first. */
 export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: string }) {
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [newCutoff, setNewCutoff] = useState<number | null>(null)
   const [sortBy, setSortBy] = useState<'newest' | 'score'>('newest')
-  useEffect(() => setProfile(readProfile()), [])
+  useEffect(() => {
+    setProfile(readProfile())
+    setNewCutoff(trackVisit())
+  }, [])
+
+  // A CARD is new when any posting in its dedupe group is — and the counter
+  // counts cards, not raw rows, so the number always matches visible badges.
+  const isNew = (j: JobRow) => newCutoff !== null && new Date(j.firstSeen).getTime() > newCutoff
+  const cardIsNew = (e: { primary: JobRow; others: JobRow[] }) =>
+    isNew(e.primary) || e.others.some(isNew)
 
   const scored = profile
     ? jobs.map((j) => ({
@@ -102,6 +139,11 @@ export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: s
         >
           Best fit
         </button>
+        {newCutoff !== null && entries.filter(cardIsNew).length > 0 && (
+          <span className="ml-1 text-xs font-medium text-emerald-700">
+            {entries.filter(cardIsNew).length} new since your last visit
+          </span>
+        )}
       </div>
 
       {profile && entries.length > 0 && scored.every((j) => (j.score ?? 0) < 3) && (
@@ -145,6 +187,11 @@ export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: s
                       >
                         {j.title} <span aria-hidden className="text-stone-300 group-hover:text-emerald-400">↗</span>
                       </a>
+                      {cardIsNew({ primary: j, others }) && (
+                        <span className="ml-1.5 inline-block rounded bg-emerald-600 px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-white">
+                          new
+                        </span>
+                      )}
                       <p className="mt-1 truncate text-[13px] text-stone-500">{j.company}</p>
                     </div>
                     <div className="shrink-0 text-right">
