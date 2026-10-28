@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getCrawledTracks, getJobs } from '@/lib/data'
 import { CITIES, jobInCity, prettySkill, type CitySlug } from '@/lib/categories'
+import { HowItWorks } from '@/components/HowItWorks'
 import { JobList } from '@/components/JobList'
 
 type SP = Promise<Record<string, string | undefined>>
@@ -42,6 +43,8 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
         {jobs.length} open postings{!showSenior && ' (senior/lead roles hidden)'}. Set up your{' '}
         <a href="/profile" className="underline">profile</a> to score every posting on your own device.
       </p>
+
+      <HowItWorks />
 
       <form method="GET" className="mt-4 flex flex-wrap items-center gap-2 text-sm">
         <input

@@ -42,6 +42,11 @@ fetches against the source sites.
       tracking (a visit ends after 60 quiet minutes, so refreshes never clear
       badges mid-session); first visit shows nothing; counter counts deduped
       CARDS so it always equals visible badges.
+- [x] "How it works" onboarding card on the home page — the radar-not-search
+      model is not guessable from the UI, so new visitors get 4 steps up front
+      (profile once, radar cadence, on-device ranking, what the amber banner
+      means). Dismissal is remembered in localStorage and collapses to a
+      one-line toggle, so the explanation stays one click away.
 
 ## Week 2 — retrieval coverage, lifecycle & category pages
 
