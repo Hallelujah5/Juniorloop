@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The nav's LoopMark at tab size: solid emerald tile + bold white glyph,
+       because a 2.4-stroke outline on white vanishes at 16px. -->
+  <rect width="32" height="32" rx="7" fill="#059669"/>
+  <g fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" transform="translate(4 4)">
+    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+    <path d="M21 3v5h-5"/>
+  </g>
+</svg>
