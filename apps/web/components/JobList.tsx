@@ -6,6 +6,34 @@ import type { JobRow } from '@/lib/data'
 
 const SOURCE_NAMES: Record<string, string> = { topdev: 'TopDev', itviec: 'ITviec', topcv: 'TopCV' }
 
+/**
+ * Visual anchor without logos: we store metadata only (no logo URLs, no image
+ * hotlinking), so each company gets a deterministic initials mark — stable
+ * color from a name hash, initials from the first meaningful words.
+ */
+const MARK_COLORS = [
+  'bg-emerald-100 text-emerald-700',
+  'bg-sky-100 text-sky-700',
+  'bg-violet-100 text-violet-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-teal-100 text-teal-700',
+  'bg-indigo-100 text-indigo-700',
+  'bg-orange-100 text-orange-700',
+]
+const LEGAL_WORDS = /^(cong|ty|công|cổ|co|phan|phần|tnhh|jsc|ltd|inc|corp|company|the|việt|viet|nam)$/i
+
+function companyMark(company: string): { initials: string; color: string } {
+  const words = company.split(/\s+/).filter((w) => w.length > 0 && !LEGAL_WORDS.test(w))
+  const initials = (words.length >= 2
+    ? words[0]![0]! + words[1]![0]!
+    : (words[0] ?? company).slice(0, 2)
+  ).toUpperCase()
+  let hash = 0
+  for (const ch of company) hash = (hash + ch.charCodeAt(0)) % 9973
+  return { initials, color: MARK_COLORS[hash % MARK_COLORS.length]! }
+}
+
 function readProfile(): Profile {
   try {
     const raw = localStorage.getItem('profile')
@@ -90,62 +118,106 @@ export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: s
         </p>
       )}
 
-      <ul className="space-y-2.5">
-        {visible.map(({ primary: j, others }) => (
-          <li key={`${j.source}-${j.id}`} className="rounded-xl border border-stone-200 bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0">
-                <a href={j.url} target="_blank" rel="nofollow noopener" className="font-semibold hover:underline">
-                  {j.title} <span aria-hidden>↗</span>
-                </a>
-                <p className="mt-0.5 text-sm text-stone-600">{j.company}</p>
-              </div>
-              {j.score !== null && (
-                <span
-                  title="Fit score for your profile — computed on your device, never sent anywhere"
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums ${
-                    j.score >= 8 ? 'bg-emerald-100 text-emerald-800'
-                    : j.score >= 4 ? 'bg-amber-100 text-amber-800'
-                    : 'bg-stone-100 text-stone-600'
-                  }`}
+      <ul className="space-y-3">
+        {visible.map(({ primary: j, others }) => {
+          const mark = companyMark(j.company)
+          return (
+            <li
+              key={`${j.source}-${j.id}`}
+              className="group rounded-2xl border border-stone-200 bg-white p-5 transition-all duration-150 hover:border-emerald-300 hover:shadow-[0_2px_12px_rgba(0,0,0,0.05)]"
+            >
+              <div className="flex gap-4">
+                <div
+                  aria-hidden
+                  className={`flex h-12 w-12 shrink-0 select-none items-center justify-center rounded-xl text-sm font-bold tracking-wide ${mark.color}`}
                 >
-                  {j.score} pts
-                </span>
-              )}
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500">
-              <span className="rounded bg-stone-100 px-1.5 py-0.5 font-medium">{SOURCE_NAMES[j.source] ?? j.source}</span>
-              {j.salary && <span className="text-emerald-700 font-medium">{j.salary}</span>}
-              {j.location && <span>{j.location}</span>}
-              <span>{timeAgo(j.lastSeen)}</span>
-              {j.isSenior && <span className="rounded bg-rose-50 px-1.5 py-0.5 text-rose-700">senior</span>}
-            </div>
-            {j.skills.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {j.skills.slice(0, 8).map((s) => (
-                  <span key={s} className="rounded-full border border-stone-200 px-2 py-0.5 text-xs text-stone-600">{s}</span>
-                ))}
+                  {mark.initials}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <a
+                        href={j.url}
+                        target="_blank"
+                        rel="nofollow noopener"
+                        className="text-[15px] font-semibold leading-snug text-stone-900 group-hover:text-emerald-700"
+                      >
+                        {j.title} <span aria-hidden className="text-stone-300 group-hover:text-emerald-400">↗</span>
+                      </a>
+                      <p className="mt-1 truncate text-[13px] text-stone-500">{j.company}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      {j.salary ? (
+                        <p className="text-sm font-semibold text-emerald-600">{j.salary}</p>
+                      ) : (
+                        <p className="text-xs text-stone-400">salary not listed</p>
+                      )}
+                      {j.score !== null && (
+                        <span
+                          title="Fit score for your profile — computed on your device, never sent anywhere"
+                          className={`mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ${
+                            j.score >= 8 ? 'bg-emerald-100 text-emerald-800'
+                            : j.score >= 4 ? 'bg-amber-100 text-amber-800'
+                            : 'bg-stone-100 text-stone-500'
+                          }`}
+                        >
+                          {j.score} pts
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {(j.location || j.isSenior || j.skills.length > 0) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      {j.location && (
+                        <span className="rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600">
+                          {j.location}
+                        </span>
+                      )}
+                      {j.isSenior && (
+                        <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">senior</span>
+                      )}
+                      {j.skills.slice(0, 5).map((s) => (
+                        <span key={s} className="rounded-md border border-stone-200 px-2 py-0.5 text-xs text-stone-500">
+                          {s}
+                        </span>
+                      ))}
+                      {j.skills.length > 5 && (
+                        <span className="text-xs text-stone-400">+{j.skills.length - 5}</span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-stone-100 pt-2.5 text-xs text-stone-500">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      via {SOURCE_NAMES[j.source] ?? j.source}
+                      {others.length > 0 && (
+                        <>
+                          <span className="text-stone-300">·</span>
+                          <span>also on</span>
+                          {others.map((o) => (
+                            <a
+                              key={`${o.source}-${o.id}`}
+                              href={o.url}
+                              target="_blank"
+                              rel="nofollow noopener"
+                              title={o.title}
+                              className="rounded-full border border-stone-300 bg-stone-50 px-2 py-0.5 font-medium text-stone-700 hover:border-emerald-400"
+                            >
+                              {SOURCE_NAMES[o.source] ?? o.source} ↗
+                            </a>
+                          ))}
+                        </>
+                      )}
+                    </span>
+                    <span className="tabular-nums">{timeAgo(j.lastSeen)}</span>
+                  </div>
+                </div>
               </div>
-            )}
-            {others.length > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-                <span className="text-stone-500">Also posted on:</span>
-                {others.map((o) => (
-                  <a
-                    key={`${o.source}-${o.id}`}
-                    href={o.url}
-                    target="_blank"
-                    rel="nofollow noopener"
-                    title={o.title}
-                    className="rounded-full border border-stone-300 bg-stone-50 px-2 py-0.5 font-medium text-stone-700 hover:border-stone-500"
-                  >
-                    {SOURCE_NAMES[o.source] ?? o.source} ↗
-                  </a>
-                ))}
-              </div>
-            )}
-          </li>
-        ))}
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

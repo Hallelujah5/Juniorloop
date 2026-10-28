@@ -6,4 +6,5 @@
 
 body {
   @apply bg-stone-50 text-stone-900 antialiased;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }

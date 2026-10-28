@@ -1,6 +1,17 @@
 import type { Metadata } from 'next'
+import { Be_Vietnam_Pro } from 'next/font/google'
 import Link from 'next/link'
 import './globals.css'
+
+// Vietnamese-first typeface (full diacritic coverage, tabular figures); next/font
+// self-hosts it at build time — zero runtime requests to Google, consistent with
+// the privacy posture.
+const beVietnam = Be_Vietnam_Pro({
+  subsets: ['latin', 'vietnamese'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-sans',
+})
 
 export const metadata: Metadata = {
   title: { default: 'JuniorLoop — IT jobs for juniors, in one place', template: '%s · JuniorLoop' },
@@ -10,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={beVietnam.variable}>
       <body>
         <header className="border-b border-stone-200 bg-white">
           <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
