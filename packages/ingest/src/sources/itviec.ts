@@ -22,7 +22,16 @@ export const fetchItviec: SourceFn = async (keywords, delaySeconds) => {
         const card = $(el)
         // DOM selectors may change — the slug fallback keeps the source alive.
         const domTitle = card.find('h3').first().text().trim()
-        const domCompany = card.find('a[href^="/companies/"]').first().text().trim()
+        // Cards carry TWO /companies/ links: a logo (no text) and a text link —
+        // take the first with text, else recover the name from the logo's alt.
+        let domCompany = ''
+        card.find('a[href^="/companies/"]').each((_, a) => {
+          if (!domCompany) domCompany = $(a).text().trim()
+        })
+        if (!domCompany) {
+          const alt = card.find('a[href^="/companies/"] img[alt]').first().attr('alt') ?? ''
+          domCompany = alt.replace(/\s*Vietnam Small Logo\s*$/i, '').trim()
+        }
         const fromSlug = slug.replace(/-\d+$/, '').replace(/-/g, ' ')
         found.set(id, {
           sourceId: id,

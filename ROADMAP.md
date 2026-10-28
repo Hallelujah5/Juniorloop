@@ -53,7 +53,9 @@ fetches against the source sites.
       reuses core's synonym/boundary machinery (`jobMatchesSkill`); stats: open,
       new-this-week, %-salary-disclosed, senior-hidden; BreadcrumbList + ItemList
       JSON-LD; empty pages go `noindex` and drop out of the sitemap.
-- [ ] ITviec: extract the company name from the slug (currently "(see posting)").
+- [x] ITviec company names — done 2026-10-28: the card has two /companies/ links
+      (logo without text, then a text link); take the first WITH text, fall back
+      to the logo's alt. Rows self-heal via upsert as rotation revisits tracks.
 - [ ] Run `probe-sources` on Actions → record the CI vs home-machine split in README.
 
 ## Week 3 — dedupe & polish

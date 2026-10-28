@@ -79,7 +79,10 @@ export default async function SkillCityPage({ params }: { params: Params }) {
         </p>
       )}
 
-      <JobList jobs={juniors} />
+      <JobList
+        jobs={juniors}
+        noMatchNote={`None of these ${name} postings in ${cityName} match your scoring profile — they are real jobs, just outside the skills you listed.`}
+      />
     </div>
   )
 }

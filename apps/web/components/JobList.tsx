@@ -22,7 +22,7 @@ function timeAgo(iso: string): string {
 }
 
 /** Scores render after mount (the profile lives in localStorage) — the server renders newest-first. */
-export function JobList({ jobs }: { jobs: JobRow[] }) {
+export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: string }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [sortBy, setSortBy] = useState<'newest' | 'score'>('newest')
   useEffect(() => setProfile(readProfile()), [])
@@ -78,10 +78,9 @@ export function JobList({ jobs }: { jobs: JobRow[] }) {
 
       {profile && entries.length > 0 && scored.every((j) => (j.score ?? 0) < 3) && (
         <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          None of the {entries.length} open postings match your primary skills — that is
-          likely a coverage gap on our side, not a bad market. Check{' '}
-          <a href="/profile" className="underline">your profile page</a> to see which
-          stacks we crawl today.
+          {noMatchNote ??
+            `None of the ${entries.length} open postings match your primary skills — that is likely a coverage gap on our side, not a bad market.`}{' '}
+          <a href="/profile" className="underline">Check your scoring profile</a>.
         </p>
       )}
 
