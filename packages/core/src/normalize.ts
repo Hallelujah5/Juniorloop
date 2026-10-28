@@ -57,12 +57,20 @@ export function dedupeHash(title: string, company: string): string {
   return fnv1a(key).toString(16).padStart(8, '0') + fnv1a(reversed).toString(16).padStart(8, '0')
 }
 
-// Vietnamese tokens ("truong phong" = head of department, "quan ly" = manager)
-// are kept on purpose: titles in the postings mix Vietnamese and English.
+// Vietnamese tokens are kept on purpose: titles in the postings mix Vietnamese and
+// English. "truong phong" = head of department, "quan ly" = manager, "cao cap" =
+// senior-level ("chuyên viên cao cấp"), "chuyen gia" = expert, "kien truc su" =
+// architect. "sen" covers the "Mid/Sen", "Sen/Lead" shorthand.
 const SENIOR_TOKENS = [
-  'senior', 'sr.', 'sr ', 'lead', 'leader', 'principal', 'architect', 'head of',
-  'director', 'manager', 'cto', 'truong phong', 'truong nhom', 'quan ly',
+  'senior', 'sen', 'sr.', 'sr ', 'lead', 'leader', 'teamlead', 'techlead', 'principal', 'architect', 'head of',
+  'director', 'manager', 'cto', 'expert', 'truong phong', 'truong nhom', 'quan ly',
+  'cao cap', 'chuyen gia', 'kien truc su',
 ]
+
+// "Từ 3 năm KN", "3+ years", "5EXP": a demanded minimum of 3+ years is a senior
+// posting whatever the title says. Ranges ("1 - 3 năm") count their lower bound.
+const YEARS_DEMANDED = /(\d+)(?:\s*[-–]\s*\d+)?\s*\+?\s*(?:nam|years?|yrs?|exp)(?![a-z])/
+const SENIOR_YEARS = 3
 
 /**
  * Is this posting aimed at experienced engineers? Flag it (NEVER delete) — hidden by
@@ -71,5 +79,10 @@ const SENIOR_TOKENS = [
  */
 export function isSenior(title: string): boolean {
   const t = ' ' + removeDiacritics(title).replace(/[^a-z0-9+#. ]/g, ' ').replace(/\s+/g, ' ').trim() + ' '
-  return SENIOR_TOKENS.some((tok) => t.includes(tok.endsWith(' ') || tok.endsWith('.') ? ' ' + tok : ' ' + tok + ' '))
+  if (SENIOR_TOKENS.some((tok) => t.includes(tok.endsWith(' ') || tok.endsWith('.') ? ' ' + tok : ' ' + tok + ' '))) {
+    return true
+  }
+  // Match on the un-stripped text: the range dash in "1-3 năm" is what makes 1 the bound.
+  const years = YEARS_DEMANDED.exec(removeDiacritics(title))
+  return years !== null && Number(years[1]) >= SENIOR_YEARS
 }

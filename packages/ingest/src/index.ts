@@ -29,6 +29,7 @@ import { fetchItviec } from './sources/itviec'
 import { fetchTopcv } from './sources/topcv'
 import { fetchTopdev } from './sources/topdev'
 import { groupDuplicates } from './dedupe'
+import { reclassifyOpenJobs } from './reclassify'
 import type { SourceFn } from './sources/types'
 import { upsertJobs } from './upsert'
 
@@ -139,6 +140,11 @@ async function main() {
       .where('track', '=', track)
       .execute()
   }
+
+  // Lifecycle: keep stored classifier flags in step with the code (details in reclassify.ts).
+  // Runs before dedupe, which blocks on company_norm + is_senior.
+  const re = await reclassifyOpenJobs(db)
+  if (re.changed > 0) console.log(`[reclassify] updated ${re.changed} of ${re.checked} open job(s)`)
 
   // Lifecycle: expire jobs their own track has missed twice (details in db/expire.ts).
   const expired = await expireStaleJobs(db)

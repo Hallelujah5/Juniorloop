@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
+
 import { jobMatchesSkill, scoreJob } from '../src/score'
 import { DEFAULT_PROFILE } from '../src/types'
+
+describe('junior signals', () => {
+  const profile = { primaryStack: [], secondaryStack: [], prefersEnglish: false }
+  it('reads Vietnamese intern / fresh-graduate wording', () => {
+    expect(scoreJob({ title: 'Thực Tập Sinh Unity', company: 'x' }, profile)).toBe(2)
+    expect(scoreJob({ title: 'Unity Developer (Mới tốt nghiệp)', company: 'x' }, profile)).toBe(2)
+    expect(scoreJob({ title: 'Unity Developer', company: 'x' }, profile)).toBe(0)
+  })
+})
 
 const matchingJob = {
   title: 'Junior Fullstack Developer (ReactJS, NestJS, PostgreSQL)',

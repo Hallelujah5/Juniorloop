@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache'
+import { isOffTopic, isSenior } from '@juniorloop/core'
 import { db } from './db'
 
 export type JobRow = {
@@ -21,6 +22,13 @@ export type JobRow = {
  * One cache entry for every open job (≤1000 rows) — filters run in-memory in the
  * server component. The DB only wakes when ingest calls revalidate or the 30-minute
  * TTL expires, keeping us far below Neon free's compute ceiling.
+ *
+ * Two classifiers run here on top of the stored columns, so a deploy takes effect
+ * at once instead of waiting for ingest to revisit each row:
+ * - isSenior is OR-ed with the stored flag (ingest's reclassify step brings the
+ *   column itself up to date on the next scan);
+ * - isOffTopic (factory QC, streamers, sales…) is display-only — not stored, the
+ *   rows stay in the DB like senior ones, they just never reach a page.
  */
 export const getJobs = unstable_cache(
   async (): Promise<JobRow[]> => {
@@ -38,21 +46,23 @@ export const getJobs = unstable_cache(
       .orderBy('jobs.last_seen_at', 'desc')
       .limit(1000)
       .execute()
-    return rows.map((r) => ({
-      id: r.id,
-      source: r.source,
-      sourceName: r.source_name,
-      url: r.url,
-      title: r.title_raw,
-      company: r.company_raw,
-      salary: r.salary_raw,
-      location: r.location,
-      skills: r.skills,
-      isSenior: r.is_senior,
-      firstSeen: r.first_seen_at.toISOString(),
-      lastSeen: r.last_seen_at.toISOString(),
-      dupGroup: r.dup_group,
-    }))
+    return rows
+      .filter((r) => !isOffTopic({ title: r.title_raw, skills: r.skills }))
+      .map((r) => ({
+        id: r.id,
+        source: r.source,
+        sourceName: r.source_name,
+        url: r.url,
+        title: r.title_raw,
+        company: r.company_raw,
+        salary: r.salary_raw,
+        location: r.location,
+        skills: r.skills,
+        isSenior: r.is_senior || isSenior(r.title_raw),
+        firstSeen: r.first_seen_at.toISOString(),
+        lastSeen: r.last_seen_at.toISOString(),
+        dupGroup: r.dup_group,
+      }))
   },
   ['open-jobs'],
   { tags: ['jobs'], revalidate: 1800 },

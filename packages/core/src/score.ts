@@ -21,8 +21,9 @@ export const SYNONYMS: Record<string, string[]> = {
 }
 
 // Vietnamese tokens kept deliberately — they match the postings' language:
-// "tieng anh" = English, "chau au" = Europe, "nam kinh nghiem" = years of experience.
-const JUNIOR_SIGNALS = ['junior', 'fresher', 'graduate', 'intern', '0-1', '0 - 1']
+// "thuc tap" = internship, "moi tot nghiep" = fresh graduate, "tieng anh" = English,
+// "chau au" = Europe, "nam kinh nghiem" = years of experience.
+const JUNIOR_SIGNALS = ['junior', 'fresher', 'graduate', 'intern', 'thuc tap', 'moi tot nghiep', '0-1', '0 - 1']
 const ENGLISH_SIGNALS = ['english', 'tieng anh', 'global', 'remote', 'australia', 'singapore', 'europe', 'chau au', 'uk', 'usa', 'united states']
 const EXPERIENCE_PENALTIES = ['5+ years', '4+ years', '3+ years', '5 nam kinh nghiem', '4 nam kinh nghiem', '3 nam kinh nghiem']
 

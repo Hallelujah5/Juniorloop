@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getCrawledTracks, getJobs } from '@/lib/data'
+import { jsonLd } from '@/lib/json-ld'
 import { CITIES, jobInCity, jobsForSkill, prettySkill, skillStats } from '@/lib/categories'
 import { JobList } from '@/components/JobList'
 
@@ -32,7 +33,7 @@ export default async function SkillPage({ params }: { params: Params }) {
   const stats = skillStats(juniors, matching.length - juniors.length)
   const name = prettySkill(skill)
 
-  const jsonLd = [
+  const ld = [
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
@@ -52,7 +53,7 @@ export default async function SkillPage({ params }: { params: Params }) {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <nav className="text-sm text-stone-500">
         <Link href="/jobs" className="hover:underline">Browse</Link> / {name}
       </nav>

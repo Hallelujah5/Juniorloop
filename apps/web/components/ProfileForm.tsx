@@ -34,15 +34,17 @@ export function ProfileForm({ tracks }: { tracks: TrackCoverage[] }) {
     setSaved(false)
   }
 
+  // Only a saved profile prefills the form; a new visitor starts from the
+  // placeholders, not from the owner's stack (DEFAULT_PROFILE only backfills fields).
   useEffect(() => {
-    let p: Profile = DEFAULT_PROFILE
     try {
       const raw = localStorage.getItem('profile')
-      if (raw) p = { ...DEFAULT_PROFILE, ...JSON.parse(raw) }
-    } catch { /* fall back to defaults */ }
-    setPrimary(p.primaryStack.join(', '))
-    setSecondary(p.secondaryStack.join(', '))
-    setPrefersEnglish(p.prefersEnglish)
+      if (!raw) return
+      const p: Profile = { ...DEFAULT_PROFILE, ...JSON.parse(raw) }
+      setPrimary(p.primaryStack.join(', '))
+      setSecondary(p.secondaryStack.join(', '))
+      setPrefersEnglish(p.prefersEnglish)
+    } catch { /* storage blocked or corrupt — start empty */ }
   }, [])
 
   const crawled = tracks.flatMap((t) => t.keywords)

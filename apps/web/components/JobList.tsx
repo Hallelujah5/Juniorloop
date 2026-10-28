@@ -34,12 +34,17 @@ function companyMark(company: string): { initials: string; color: string } {
   return { initials, color: MARK_COLORS[hash % MARK_COLORS.length]! }
 }
 
-function readProfile(): Profile {
+/**
+ * Only a profile the visitor saved themselves counts. Scoring strangers against
+ * DEFAULT_PROFILE (the owner's stack) showed "0 pts" on nearly every card and
+ * let "Best fit" rank by someone else's preferences — worse than no score.
+ */
+function readProfile(): Profile | null {
   try {
     const raw = localStorage.getItem('profile')
     if (raw) return { ...DEFAULT_PROFILE, ...JSON.parse(raw) }
-  } catch { /* private mode / storage blocked — fall back to defaults */ }
-  return DEFAULT_PROFILE
+  } catch { /* private mode / storage blocked — behaves like no profile */ }
+  return null
 }
 
 function timeAgo(iso: string): string {
@@ -79,11 +84,13 @@ function trackVisit(): number | null {
 /** Scores render after mount (the profile lives in localStorage) — the server renders newest-first. */
 export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: string }) {
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [mounted, setMounted] = useState(false)
   const [newCutoff, setNewCutoff] = useState<number | null>(null)
   const [sortBy, setSortBy] = useState<'newest' | 'score'>('newest')
   useEffect(() => {
     setProfile(readProfile())
     setNewCutoff(trackVisit())
+    setMounted(true)
   }, [])
 
   // A CARD is new when any posting in its dedupe group is — and the counter
@@ -135,10 +142,16 @@ export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: s
         <button
           onClick={() => setSortBy('score')}
           disabled={!profile}
-          className={`rounded-full px-3 py-1 ${sortBy === 'score' ? 'bg-emerald-600 text-white' : 'bg-white border border-stone-300'}`}
+          title={profile ? undefined : 'Save a scoring profile first'}
+          className={`rounded-full px-3 py-1 ${sortBy === 'score' ? 'bg-emerald-600 text-white' : 'bg-white border border-stone-300 disabled:opacity-50'}`}
         >
           Best fit
         </button>
+        {mounted && !profile && (
+          <a href="/profile" className="ml-1 text-xs text-stone-500 underline decoration-stone-300 hover:text-stone-800">
+            Set up a profile to see fit scores
+          </a>
+        )}
         {newCutoff !== null && entries.filter(cardIsNew).length > 0 && (
           <span className="ml-1 text-xs font-medium text-emerald-700">
             {entries.filter(cardIsNew).length} new since your last visit

@@ -45,4 +45,21 @@ describe('isSenior', () => {
   it('does not match substrings inside other words', () => {
     expect(isSenior('Thực tập sinh Leadgen Marketing')).toBe(false)
   })
+  it('catches Vietnamese seniority words and the Mid/Sen shorthand', () => {
+    expect(isSenior('Chuyên viên Cao cấp QA')).toBe(true)
+    expect(isSenior('Chuyên Gia Kiểm Thử & Đánh Giá An Ninh (Pentest)')).toBe(true)
+    expect(isSenior('Kiến trúc sư giải pháp CNTT')).toBe(true)
+    expect(isSenior('Data Governance Expert')).toBe(true)
+    expect(isSenior('Mid/Sen Backend Developer (Java/Spring Boot)')).toBe(true)
+    expect(isSenior('Data Engineer (Sen/Lead)')).toBe(true)
+    expect(isSenior('Teamlead Cloud')).toBe(true)
+  })
+  it('flags a demanded minimum of 3+ years, in either language', () => {
+    expect(isSenior('Lập Trình Viên Fullstack-Từ 3 Năm KN - Onsite Bank')).toBe(true)
+    expect(isSenior('Mobile Game Developer Fullstack 5EXP Java, C++, C#')).toBe(true)
+    expect(isSenior('Backend Developer (3+ years)')).toBe(true)
+    expect(isSenior('Java Developer (Từ 1 - 2 Năm Kinh Nghiệm)')).toBe(false)
+    expect(isSenior('Fresher Developer (1-3 năm)')).toBe(false)
+    expect(isSenior('DevSecOps Engineer (2025TD946)')).toBe(false)
+  })
 })

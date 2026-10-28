@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { getCrawledTracks, getJobs } from '@/lib/data'
-import { CITIES, jobInCity, prettySkill, type CitySlug } from '@/lib/categories'
+import { jsonLd } from '@/lib/json-ld'
+import { jobMatchesQuery } from '@juniorloop/core'
+import { CITIES, jobInCity, prettySkill, toJobInput, type CitySlug } from '@/lib/categories'
 import { HowItWorks } from '@/components/HowItWorks'
 import { JobList } from '@/components/JobList'
 
@@ -8,7 +10,7 @@ type SP = Promise<Record<string, string | undefined>>
 
 export default async function HomePage({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams
-  const q = (sp.q ?? '').toLowerCase().trim()
+  const q = (sp.q ?? '').trim()
   const source = sp.source ?? ''
   const city = CITIES.some((c) => c.slug === sp.city) ? (sp.city as CitySlug) : ''
   const showSenior = sp.senior === '1'
@@ -18,14 +20,11 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
     if (!showSenior && j.isSenior) return false
     if (source && j.source !== source) return false
     if (city && !jobInCity(j, city)) return false
-    if (q) {
-      const text = `${j.title} ${j.company} ${j.skills.join(' ')}`.toLowerCase()
-      if (!q.split(/\s+/).every((term) => text.includes(term))) return false
-    }
+    if (q && !jobMatchesQuery(toJobInput(j), q)) return false
     return true
   })
 
-  const jsonLd = {
+  const ld = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     itemListElement: jobs.slice(0, 20).map((j, i) => ({
@@ -35,7 +34,7 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
 
   return (
     <div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <h1 className="text-2xl font-bold tracking-tight">
         IT jobs for juniors — 3 boards in one place, refreshed every 6 hours
       </h1>
