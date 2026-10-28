@@ -1,8 +1,10 @@
 import type { JobInput, Profile } from './types'
 import { removeDiacritics } from './normalize'
 
-/** Synonym clusters: declare one skill in the profile, match every spelling in postings. */
-const SYNONYMS: Record<string, string[]> = {
+/** Synonym clusters: declare one skill in the profile, match every spelling in postings.
+ *  Exported so extract.ts tests can assert SKILL_LEXICON stays aligned with these keys —
+ *  a prefilled profile must score exactly as well as a hand-typed one. */
+export const SYNONYMS: Record<string, string[]> = {
   typescript: ['typescript', 'ts'],
   react: ['react', 'reactjs', 'react.js'],
   nodejs: ['nodejs', 'node.js', 'node'],

@@ -54,6 +54,17 @@ literals inside `core` (company suffixes, senior tokens, scoring signals like
 `"tieng anh"`) are **domain data, kept on purpose** — they match the language the
 job postings are written in.
 
+## Your CV never leaves your browser
+
+The profile can be built from your CV: drop a PDF (parsed by a lazy-loaded
+pdf.js running **in your tab**) or paste the text. Skill extraction is the same
+transparent dictionary the scorer uses — no AI black box, no server. Don't take
+our word for it: open DevTools → Network while it parses, or go offline first;
+parsing still works. The file and its text live in component memory only; the
+app stores nothing but the three-field profile **you** click Save on, in your
+own browser's localStorage. Scanned PDFs, password-protected files, DOCX and
+old browsers all fall back to the paste box.
+
 ## Scraping ethics — read this before forking
 
 This is the most important part of the repo, not the technical part:

@@ -12,6 +12,7 @@
     "@juniorloop/core": "workspace:*",
     "@juniorloop/db": "workspace:*",
     "next": "15.5.28",
+    "pdfjs-dist": "6.4.299",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },

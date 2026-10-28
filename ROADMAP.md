@@ -84,9 +84,16 @@ fetches against the source sites.
 
 ## Post-MVP (no order promised)
 
-- [ ] **CV upload → auto-filled scoring profile** (parse client-side — pdf.js or
-      similar; extract skills/level; never upload the file to a server). This is
-      the flagship feature of the product vision above.
+- [x] **CV upload → auto-filled scoring profile** — done 2026-10-28, fully
+      client-side: pdfjs-dist 6.4.299 (legacy build) lazy-loaded on interaction,
+      worker emitted as a hashed webpack asset, paste box as the universal
+      fallback (DOCX, scanned PDFs, old browsers — every error funnels there).
+      Extraction in core: SKILL_LEXICON (~95 canonicals, alignment with
+      SYNONYMS enforced by test), count≥2 primary guard on long texts,
+      diacritic-ratio CV-language detection. Verified with a real CV in the
+      browser; the network log during parsing shows localhost-only traffic —
+      the privacy claim is demonstrated, not asserted. DOCX later = one lazy
+      mammoth branch in the dispatcher.
 - [ ] Accounts + saved searches + email digest (auth becomes worth it here).
 - [ ] VietnamWorks: only re-added if a legitimate link-out path exists (feed/partnership).
 - [ ] LLM job-description analysis (real requirements summary, red flags) — rides the

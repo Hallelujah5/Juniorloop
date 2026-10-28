@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { DEFAULT_PROFILE, type Profile } from '@juniorloop/core'
+import { DEFAULT_PROFILE, type ExtractedProfile, type Profile } from '@juniorloop/core'
 import type { TrackCoverage } from '@/lib/data'
+import { CvUpload } from './CvUpload'
 
 function parseSkills(csv: string): string[] {
   return csv.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
@@ -22,6 +23,16 @@ export function ProfileForm({ tracks }: { tracks: TrackCoverage[] }) {
   const [secondary, setSecondary] = useState('')
   const [prefersEnglish, setPrefersEnglish] = useState(true)
   const [saved, setSaved] = useState(false)
+  const [draftSummary, setDraftSummary] = useState<{ skills: number; english: boolean | null } | null>(null)
+
+  /** A CV draft prefills the form — nothing is saved until the user clicks Save. */
+  function applyDraft(p: ExtractedProfile) {
+    setPrimary(p.primaryStack.join(', '))
+    setSecondary(p.secondaryStack.join(', '))
+    if (p.prefersEnglish !== null) setPrefersEnglish(p.prefersEnglish)
+    setDraftSummary({ skills: Object.keys(p.matchCounts).length, english: p.prefersEnglish })
+    setSaved(false)
+  }
 
   useEffect(() => {
     let p: Profile = DEFAULT_PROFILE
@@ -64,6 +75,18 @@ export function ProfileForm({ tracks }: { tracks: TrackCoverage[] }) {
         when it signals an English/global/remote environment (if you opt in), −3 when it
         demands 3+ years of experience.
       </p>
+
+      <div className="mt-5">
+        <CvUpload onDraft={applyDraft} />
+        {draftSummary && (
+          <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            Found {draftSummary.skills} skill{draftSummary.skills === 1 ? '' : 's'}
+            {draftSummary.english === true && ' · English CV detected'}
+            {draftSummary.english === false && ' · Vietnamese CV detected'}
+            {' '}— review the draft below, then Save.
+          </p>
+        )}
+      </div>
 
       <form onSubmit={save} className="mt-6 space-y-5">
         <label className="block">

@@ -38,6 +38,12 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
   circuit breaker tripping after 3 is deliberate. If a source asks us to stop,
   flip its kill switch in the `sources` table; do not argue.
 - Never store raw HTML/payloads in the DB (Neon free is 1 GB).
+- **Never move CV parsing or profile synthesis server-side** — "your CV never
+  leaves your browser" is the product's core promise. Never add cMapUrl/
+  standardFontDataUrl/iccUrl/wasmUrl (CDN) config to the PDF pipeline: one
+  mid-parse fetch torches the verifiable-privacy claim. The pdf.js worker is a
+  hashed webpack asset via new URL(..., import.meta.url) — never copy it to
+  /public (version drift causes API/Worker mismatch errors on upgrade).
 - Never add ads/monetization while deployed on Vercel Hobby (non-commercial terms).
 - Never use `next/image` for company logos (5K transformations/month quota).
 
