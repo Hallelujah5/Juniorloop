@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Be_Vietnam_Pro } from 'next/font/google'
 import Link from 'next/link'
+import { SiteNav } from '@/components/SiteNav'
 import './globals.css'
 
 // Vietnamese-first typeface (full diacritic coverage, tabular figures); next/font
@@ -23,20 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={beVietnam.variable}>
       <body>
-        <header className="border-b border-stone-200 bg-white">
-          <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-            <Link href="/" className="text-lg font-bold tracking-tight">
-              Junior<span className="text-emerald-600">Loop</span>
-            </Link>
-            <div className="flex gap-4 text-sm text-stone-600">
-              <Link href="/" className="hover:text-stone-900">Jobs</Link>
-              <Link href="/jobs" className="hover:text-stone-900">Browse</Link>
-              <Link href="/profile" className="hover:text-stone-900">Scoring profile</Link>
-              <Link href="/status" className="hover:text-stone-900">Pipeline status</Link>
-              <Link href="/principles" className="hover:text-stone-900">Data principles</Link>
-            </div>
-          </nav>
-        </header>
+        <SiteNav />
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-5xl px-4 py-8 text-xs text-stone-500">
           <p>
