@@ -1,4 +1,16 @@
 import { describe, expect, it } from 'vitest'
+import { minYearsFromExperiences } from '../src/normalize'
+
+describe('experience gate (0–1y audience)', () => {
+  it('parses TopDev experiences_str into minimum years', () => {
+    expect(minYearsFromExperiences('2 năm, 5 năm')).toBe(2)
+    expect(minYearsFromExperiences('1 năm, 3 năm')).toBe(1)
+    expect(minYearsFromExperiences('Chưa có kinh nghiệm')).toBe(0)
+    expect(minYearsFromExperiences('')).toBeNull()
+    expect(minYearsFromExperiences(null)).toBeNull()
+    expect(minYearsFromExperiences(undefined)).toBeNull()
+  })
+})
 import { dedupeHash, isSenior, normalizeCompany, normalizeTitle, removeDiacritics } from '../src/normalize'
 
 describe('removeDiacritics', () => {
@@ -54,12 +66,20 @@ describe('isSenior', () => {
     expect(isSenior('Data Engineer (Sen/Lead)')).toBe(true)
     expect(isSenior('Teamlead Cloud')).toBe(true)
   })
-  it('flags a demanded minimum of 3+ years, in either language', () => {
+  it('flags a demanded minimum of 2+ years, in either language', () => {
     expect(isSenior('Lập Trình Viên Fullstack-Từ 3 Năm KN - Onsite Bank')).toBe(true)
     expect(isSenior('Mobile Game Developer Fullstack 5EXP Java, C++, C#')).toBe(true)
     expect(isSenior('Backend Developer (3+ years)')).toBe(true)
-    expect(isSenior('Java Developer (Từ 1 - 2 Năm Kinh Nghiệm)')).toBe(false)
+    expect(isSenior('Fullstack Developer (2 năm kinh nghiệm)')).toBe(true)
+    expect(isSenior('Backend Developer (2+ years)')).toBe(true)
+    expect(isSenior('Java Developer (Từ 1 - 2 Năm Kinh Nghiệm)')).toBe(false) // lower bound 1 — reachable
     expect(isSenior('Fresher Developer (1-3 năm)')).toBe(false)
     expect(isSenior('DevSecOps Engineer (2025TD946)')).toBe(false)
+  })
+  it('trusts the source’s structured minimum years over a clean title', () => {
+    expect(isSenior('AI Full Stack Engineer', 2)).toBe(true)
+    expect(isSenior('AI Full Stack Engineer', 1)).toBe(false)
+    expect(isSenior('AI Full Stack Engineer', 0)).toBe(false)
+    expect(isSenior('AI Full Stack Engineer', null)).toBe(false)
   })
 })

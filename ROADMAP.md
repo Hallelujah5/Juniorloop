@@ -50,16 +50,18 @@ fetches against the source sites.
 
 ## Next session queue (owner's list, 2026-10-29)
 
-- [ ] **Experience-range restraint (0–1 year)** — scored jobs can link to postings
-      demanding "3+ years": the fit score ranks stack match only, and JD bodies are
-      never fetched/stored (metadata-only principle), so in-body experience lines
-      are invisible today. Design order: (1) check whether TopDev's search API
-      already returns a structured experience field (zero extra requests); (2)
-      extend the isSenior machinery with year-count patterns in titles/metadata
-      ("3+ years", "3 năm kinh nghiệm", "ít nhất 2 năm") and hide ≥2y the same way
-      senior roles are hidden; (3) full JD fetching stays off the table — it
-      multiplies request volume against the politeness budget. Be honest in the
-      UI: without reading JDs this is best-effort filtering, not a guarantee.
+- [x] **Experience-range restraint (0–1 year)** — done 2026-10-29. TopDev's API
+      turned out to send a structured demand (`experiences_str`, "2 năm, 5 năm"
+      = min 2) on the listing call we already make — zero extra requests. Stored
+      as `jobs.min_years` (migration 0004); the gate is one rule in core:
+      `isSenior(title, minYears)` fires on seniority tokens, a ≥2-year demand in
+      the title (threshold lowered from 3), or structured min_years ≥ 2. Upsert
+      writes it, reclassify heals old rows each scan, `pnpm scan --maintain`
+      rolls a classifier change over existing rows with zero source requests.
+      Cards show "2y+ exp" instead of "senior" when the years are the reason.
+      HTML sources (ITviec/TopCV) have no structured field — title patterns
+      only; still best-effort for demands living solely in the JD body (JD
+      fetching stays off the table per the politeness budget).
 - [ ] **More sources** (owner's research list). Hard constraints first: LinkedIn
       is NEVER a source (their UA forbids it — CLAUDE.md); VietnamWorks only via
       a legitimate feed/partnership (existing line below); Indeed's ToS forbids

@@ -36,7 +36,8 @@ export async function upsertJobs(
       salary_raw: j.salary,
       location: j.location,
       skills: j.skills,
-      is_senior: isSenior(j.title),
+      min_years: j.minYears ?? null,
+      is_senior: isSenior(j.title, j.minYears),
       status: 'open' as const,
       last_seen_at: now,
       last_track: track,
@@ -54,6 +55,9 @@ export async function upsertJobs(
           salary_raw: row.salary_raw,
           location: row.location,
           skills: row.skills,
+          // A source that stops sending the field must not erase a stored value
+          // (reclassify reads the stored column and would heal is_senior anyway).
+          ...(j.minYears != null ? { min_years: j.minYears } : {}),
           is_senior: row.is_senior,
           status: 'open', // seen again → reopen, keep first_seen_at
           last_seen_at: now,

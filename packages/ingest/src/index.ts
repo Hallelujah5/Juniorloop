@@ -46,6 +46,10 @@ const { values: arg } = parseArgs({
     track: { type: 'string' },
     delay: { type: 'string', default: '1.5' },
     prod: { type: 'boolean', default: false }, // consumed above, pre-dotenv
+    // Maintenance-only run: re-derive classifier flags + regroup duplicates and
+    // refresh the site, with ZERO requests to the source sites. Used to roll a
+    // classifier change (e.g. a new experience threshold) over existing rows.
+    maintain: { type: 'boolean', default: false },
   },
 })
 
@@ -86,6 +90,17 @@ async function callRevalidate() {
 async function main() {
   const db = createDb()
   const delaySeconds = Number(arg.delay) || 1.5
+
+  if (arg.maintain) {
+    console.log('[maintain] no scanning — reclassify + dedupe + revalidate only')
+    const re = await reclassifyOpenJobs(db)
+    console.log(`[reclassify] updated ${re.changed} of ${re.checked} open job(s)`)
+    const dup = await groupDuplicates(db)
+    console.log(`[dedupe] ${dup.groups} group(s) covering ${dup.grouped} job(s)`)
+    await callRevalidate()
+    await db.destroy()
+    return
+  }
 
   let keywords: string[]
   let track: string | null = null

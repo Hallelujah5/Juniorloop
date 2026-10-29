@@ -248,7 +248,12 @@ export function JobList({ jobs, noMatchNote }: { jobs: JobRow[]; noMatchNote?: s
                         </span>
                       )}
                       {j.isSenior && (
-                        <span className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700">senior</span>
+                        <span
+                          title="Hidden from the default view — aimed at experienced candidates"
+                          className="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-700"
+                        >
+                          {(j.minYears ?? 0) >= 2 ? `${j.minYears}y+ exp` : 'senior'}
+                        </span>
                       )}
                       {j.skills.slice(0, 5).map((s) => (
                         <span key={s} className="rounded-md border border-stone-200 px-2 py-0.5 text-xs text-stone-500">

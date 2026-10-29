@@ -58,7 +58,12 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
   ITviec soft-404s wrong slugs with HTTP 200.
 - In-source dedupe key: `UNIQUE(source, source_id)`. A job seen again → upsert
   reopens it + bumps `last_seen_at`, keeping `first_seen_at`.
-- Senior postings get the `is_senior` flag, NEVER deleted. Expiry (db/src/expire.ts,
+- Senior postings get the `is_senior` flag, NEVER deleted. The flag means
+  "beyond the 0–1y audience": seniority tokens OR a ≥2-year demand in the title
+  OR structured `min_years` ≥ 2 (TopDev `experiences_str`; NULL = source silent,
+  never treated as 0). `pnpm scan --maintain` re-derives flags with zero source
+  requests. A migration that adds columns the web app selects must reach the
+  PRODUCTION DB before the Vercel deploy that reads them. Expiry (db/src/expire.ts,
   runs after every scan): `expired` only after ≥2 successful scans of the job's own
   (source, last_track) since last_seen_at, 48h guard (NULL-track legacy jobs: any
   scans of the source, 72h guard). Re-sighting reopens. Never expire on "this scan

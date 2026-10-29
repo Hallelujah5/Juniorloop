@@ -1,7 +1,10 @@
+import { minYearsFromExperiences } from '@juniorloop/core'
 import { createFetcher, sleep, SourceBlocked } from '../http'
 import type { RawJob, SourceFn } from './types'
 
-const FIELDS = 'id,title,salary,company,detail_url,addresses,skills_str,job_levels_str'
+// experiences_str is the structured demand ("2 năm, 5 năm" = min 2) — it rides
+// the same listing call, so the experience gate costs zero extra requests.
+const FIELDS = 'id,title,salary,company,detail_url,addresses,skills_str,job_levels_str,experiences_str'
 
 /** TopDev: public JSON API (the working param is `keyword`). Safe to run on CI. */
 export const fetchTopdev: SourceFn = async (keywords, delaySeconds) => {
@@ -30,6 +33,7 @@ export const fetchTopdev: SourceFn = async (keywords, delaySeconds) => {
           salary: typeof salary === 'object' ? salary?.value ?? null : salary ?? null,
           location,
           skills: String(j.skills_str ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+          minYears: minYearsFromExperiences(typeof j.experiences_str === 'string' ? j.experiences_str : null),
         })
       }
     } catch (e) {

@@ -24,6 +24,7 @@ export interface JobsTable {
   skills: string[]
   /** Flagged instead of deleted — "juniors only" is a display filter, not data loss. */
   is_senior: boolean
+  min_years: number | null
   status: 'open' | 'expired' | 'hidden'
   first_seen_at: Generated<Date>
   last_seen_at: Date

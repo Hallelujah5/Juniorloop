@@ -11,14 +11,14 @@ import type { Db } from '@juniorloop/db'
 export async function reclassifyOpenJobs(db: Db): Promise<{ checked: number; changed: number }> {
   const jobs = await db
     .selectFrom('jobs')
-    .select(['id', 'title_raw', 'company_raw', 'is_senior', 'title_norm', 'company_norm'])
+    .select(['id', 'title_raw', 'company_raw', 'is_senior', 'title_norm', 'company_norm', 'min_years'])
     .where('status', '=', 'open')
     .execute()
 
   let changed = 0
   for (const j of jobs) {
     const next = {
-      is_senior: isSenior(j.title_raw),
+      is_senior: isSenior(j.title_raw, j.min_years),
       title_norm: normalizeTitle(j.title_raw),
       company_norm: normalizeCompany(j.company_raw),
     }

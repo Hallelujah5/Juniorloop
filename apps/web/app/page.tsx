@@ -39,7 +39,7 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
         Scan websites, fetch jobs info, 4 times per day
       </h1>
       <p className="mt-1 text-sm text-stone-600">
-        {jobs.length} open postings{!showSenior && ' (senior/lead roles hidden)'}. Set up your{' '}
+        {jobs.length} open postings{!showSenior && ' (senior & 2y+ experience roles hidden)'}. Set up your{' '}
         <a href="/profile" className="underline">profile</a> to score every posting on your own device.
       </p>
 
@@ -64,7 +64,7 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
         </select>
         <label className="flex items-center gap-1.5 text-stone-600">
           <input type="checkbox" name="senior" value="1" defaultChecked={showSenior} />
-          include senior roles
+          include senior / 2y+ roles
         </label>
         <button className="rounded-lg bg-stone-900 px-4 py-2 font-medium text-white">Filter</button>
       </form>
