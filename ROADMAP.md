@@ -48,6 +48,34 @@ fetches against the source sites.
       means). Dismissal is remembered in localStorage and collapses to a
       one-line toggle, so the explanation stays one click away.
 
+## Next session queue (owner's list, 2026-10-29)
+
+- [ ] **Experience-range restraint (0–1 year)** — scored jobs can link to postings
+      demanding "3+ years": the fit score ranks stack match only, and JD bodies are
+      never fetched/stored (metadata-only principle), so in-body experience lines
+      are invisible today. Design order: (1) check whether TopDev's search API
+      already returns a structured experience field (zero extra requests); (2)
+      extend the isSenior machinery with year-count patterns in titles/metadata
+      ("3+ years", "3 năm kinh nghiệm", "ít nhất 2 năm") and hide ≥2y the same way
+      senior roles are hidden; (3) full JD fetching stays off the table — it
+      multiplies request volume against the politeness budget. Be honest in the
+      UI: without reading JDs this is best-effort filtering, not a guarantee.
+- [ ] **More sources** (owner's research list). Hard constraints first: LinkedIn
+      is NEVER a source (their UA forbids it — CLAUDE.md); VietnamWorks only via
+      a legitimate feed/partnership (existing line below); Indeed's ToS forbids
+      scraping — skip unless a publisher API path exists; verify JobStreet still
+      operates a Vietnam board at all before investing. Priority candidates for
+      the junior audience, each needing the standard probe (robots.txt, ToS,
+      listing structure, ≥1s politeness): CareerViet, Vieclam24h, JobsGO,
+      Glints VN, Ybox (fresher/intern focus). One `SourceFn` file + migration
+      INSERT per source, fail-soft, per the architecture notes.
+- [x] Expired jobs leave the listing — already true: `getJobs` filters
+      `status='open'`, expired rows survive only in the DB and the /status
+      counts, and a re-sighting reopens them.
+- [x] Home h1 changed to the owner's copy: "Scan websites, fetch jobs info,
+      4 times per day" (2026-10-29). SEO note: the browser-tab/metadata title
+      still carries "IT jobs for juniors" so the ranking keyword survives.
+
 ## Week 2 — retrieval coverage, lifecycle & category pages
 
 - [x] **Retrieval coverage (the Unity problem)** — done 2026-10-27: `scan_keywords`
