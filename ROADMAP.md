@@ -62,6 +62,11 @@ fetches against the source sites.
       HTML sources (ITviec/TopCV) have no structured field — title patterns
       only; still best-effort for demands living solely in the JD body (JD
       fetching stays off the table per the politeness budget).
+- [x] **Keep ITviec and TopCV fresh** — done 2026-11-06. They had gone 9 days
+      unscanned because nothing ran them automatically. Now a daily Windows task
+      runs `scripts/scan-html.ps1`, one track per source, with per-source rotation
+      so it can't skip tracks. Site copy now states the real frequency. Limit: it
+      only runs while the owner's machine is on, so check /status for gaps.
 - [ ] **More sources** (owner's research list). Hard constraints first: LinkedIn
       is NEVER a source (their UA forbids it — CLAUDE.md); VietnamWorks only via
       a legitimate feed/partnership (existing line below); Indeed's ToS forbids

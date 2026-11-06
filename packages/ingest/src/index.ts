@@ -4,6 +4,7 @@
  *   pnpm scan --track game              # force one track
  *   pnpm scan --keywords unity,unreal   # explicit keywords (no rotation bookkeeping)
  *   pnpm scan --sources topdev          # limit sources (CI runs this)
+ *   pnpm scan --sources topcv --dry-run # print the track rotation would pick, then stop
  * Respects the kill switch (sources.ingest_enabled) and the politeness budget:
  * scanning ONE track per run keeps request volume constant as coverage grows.
  */
@@ -23,6 +24,7 @@ if (PROD && !process.env.DATABASE_URL) {
 if (PROD) console.log('[env] PRODUCTION — using .env.production')
 
 import { parseArgs } from 'node:util'
+import { pickLeastRecentTrack } from '@juniorloop/core'
 import { createDb, expireStaleJobs, type Db } from '@juniorloop/db'
 import { SourceBlocked } from './http'
 import { fetchItviec } from './sources/itviec'
@@ -50,11 +52,13 @@ const { values: arg } = parseArgs({
     // refresh the site, with ZERO requests to the source sites. Used to roll a
     // classifier change (e.g. a new experience threshold) over existing rows.
     maintain: { type: 'boolean', default: false },
+    // Print which track rotation would pick and stop: zero requests to source sites.
+    'dry-run': { type: 'boolean', default: false },
   },
 })
 
-/** Rotation: the enabled track whose keywords were scanned longest ago (never-scanned first). */
-async function pickTrack(db: Db, forced?: string): Promise<{ track: string; keywords: string[] }> {
+/** Rotation: the enabled track these sources have gone longest without scanning (see core/rotation.ts). */
+async function pickTrack(db: Db, sources: string[], forced?: string): Promise<{ track: string; keywords: string[] }> {
   let q = db.selectFrom('scan_keywords').selectAll().where('enabled', '=', true)
   if (forced) q = q.where('track', '=', forced)
   const rows = await q.execute()
@@ -63,16 +67,27 @@ async function pickTrack(db: Db, forced?: string): Promise<{ track: string; keyw
       ? `track "${forced}" has no enabled keywords`
       : 'scan_keywords is empty — apply migrations first')
   }
-  const byTrack = new Map<string, { keywords: string[]; oldest: number }>()
+  const byTrack = new Map<string, { keywords: string[]; hasNewKeyword: boolean }>()
   for (const r of rows) {
-    const t = byTrack.get(r.track) ?? { keywords: [], oldest: Infinity }
+    const t = byTrack.get(r.track) ?? { keywords: [], hasNewKeyword: false }
     t.keywords.push(r.keyword)
-    t.oldest = Math.min(t.oldest, r.last_scanned_at ? r.last_scanned_at.getTime() : -1)
+    if (!r.last_scanned_at) t.hasNewKeyword = true
     byTrack.set(r.track, t)
   }
-  const [track, data] = [...byTrack.entries()]
-    .sort((a, b) => a[1].oldest - b[1].oldest || a[0].localeCompare(b[0]))[0]!
-  return { track, keywords: data.keywords }
+  const runs = sources.length === 0 ? [] : await db
+    .selectFrom('scan_runs')
+    .select((eb) => ['source', 'track', eb.fn.max('started_at').as('at')])
+    .where('status', '=', 'ok')
+    .where('track', 'is not', null)
+    .where('source', 'in', sources)
+    .groupBy(['source', 'track'])
+    .execute()
+  const track = pickLeastRecentTrack(
+    [...byTrack.entries()].map(([track, d]) => ({ track, hasNewKeyword: d.hasNewKeyword })),
+    sources,
+    runs.map((r) => ({ source: r.source, track: r.track!, at: new Date(r.at).getTime() })),
+  )!
+  return { track, keywords: byTrack.get(track)!.keywords }
 }
 
 async function callRevalidate() {
@@ -102,18 +117,6 @@ async function main() {
     return
   }
 
-  let keywords: string[]
-  let track: string | null = null
-  if (arg.keywords) {
-    keywords = arg.keywords.split(',').map((s) => s.trim()).filter(Boolean)
-    console.log(`[keywords] explicit: ${keywords.join(', ')} (no rotation bookkeeping)`)
-  } else {
-    const picked = await pickTrack(db, arg.track)
-    track = picked.track
-    keywords = picked.keywords
-    console.log(`[rotation] track "${track}" — keywords: ${keywords.join(', ')}`)
-  }
-
   const requested = arg.sources!.split(',').map((s) => s.trim()).filter(Boolean)
   const enabled = await db
     .selectFrom('sources')
@@ -124,6 +127,24 @@ async function main() {
   const toRun = enabled.map((r) => r.code).filter((c) => c in SOURCES)
   const skipped = requested.filter((c) => !toRun.includes(c))
   if (skipped.length) console.log(`[kill-switch] skipping disabled/unknown sources: ${skipped.join(', ')}`)
+
+  let keywords: string[]
+  let track: string | null = null
+  if (arg.keywords) {
+    keywords = arg.keywords.split(',').map((s) => s.trim()).filter(Boolean)
+    console.log(`[keywords] explicit: ${keywords.join(', ')} (no rotation bookkeeping)`)
+  } else {
+    const picked = await pickTrack(db, toRun, arg.track)
+    track = picked.track
+    keywords = picked.keywords
+    console.log(`[rotation] track "${track}" — keywords: ${keywords.join(', ')}`)
+  }
+
+  if (arg['dry-run']) {
+    console.log(`[dry-run] would scan ${toRun.join(', ') || '(no enabled sources)'} — no requests sent`)
+    await db.destroy()
+    return
+  }
 
   let okCount = 0
   for (const code of toRun) {

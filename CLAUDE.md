@@ -77,6 +77,12 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
 - The web app reads the DB only through `apps/web/lib/data.ts` (unstable_cache,
   tag `jobs`); ingest calls `POST /api/revalidate?secret=…` when done. Never query
   the DB directly from a page/component.
+- Track rotation is PER SOURCE (core/src/rotation.ts, from successful `scan_runs`).
+  Never go back to a stamp shared between schedules: 2 TopDev runs + 1 HTML run a
+  day would then step over each other's tracks and skip most of them. HTML sources
+  run from `scripts/scan-html.ps1` (daily scheduled task on the owner's machine), one
+  track per source. Never burst several tracks in a row: 4 tracks in 5 minutes got
+  TopCV to answer 429 on 2026-11-06.
 - Env: `.env` at the monorepo ROOT (next.config.ts loads it); see `.env.example`.
 
 ## Common commands
@@ -84,6 +90,7 @@ goal: a real product + a portfolio piece (TS/React/Node/PG/Kysely stack).
 ```bash
 pnpm db:migrate                       # create DB if missing + apply migrations
 pnpm scan                             # rotation: least-recently-scanned track
+pnpm scan --sources topcv --dry-run   # show the track rotation would pick; no source requests
 pnpm scan --track game                # force one track
 pnpm scan --keywords unity,unreal     # explicit keywords (no rotation bookkeeping)
 pnpm scan --sources topdev            # limit sources (CI runs this; no "--" before flags)

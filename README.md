@@ -43,11 +43,20 @@ Home-machine scans target production with `--prod`, which reads `.env.production
 (gitignored; holds the production `DATABASE_URL`, `REVALIDATE_URL`,
 `REVALIDATE_SECRET`). Without the flag, scans hit your local dev database.
 
-Scheduling the HTML sources on Windows:
+Scheduling the HTML sources on Windows: `scripts/scan-html.ps1` scans one track of
+ITviec and one of TopCV, runs each source separately so each keeps its own rotation,
+and appends to `scan-html.log` (gitignored). A full cycle of the six tracks takes six
+days. Register it as a daily task; it runs whatever is checked out in this folder,
+only while the machine is on, and catches up after a missed run:
 
 ```powershell
-schtasks /Create /TN "JuniorLoopScan" /SC DAILY /ST 08:30 /TR "cmd /c cd /d D:\TranBaoPhuc\juniorloop && pnpm scan --prod --sources itviec,topcv" /F
+$action = New-ScheduledTaskAction -Execute powershell.exe -WorkingDirectory (Get-Location) -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$PWD\scripts\scan-html.ps1`""
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 1) -MultipleInstances IgnoreNew
+Register-ScheduledTask -TaskName "JuniorLoop Daily Scan" -Action $action -Settings $settings -Trigger (New-ScheduledTaskTrigger -Daily -At 12:30)
 ```
+
+To test without contacting any job site, run `.\scripts\scan-html.ps1 -DryRun`. To
+remove the task, run `Unregister-ScheduledTask -TaskName "JuniorLoop Daily Scan"`.
 
 A note on the codebase: identifiers and docs are English; the Vietnamese string
 literals inside `core` (company suffixes, senior tokens, scoring signals like
