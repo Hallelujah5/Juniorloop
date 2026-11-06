@@ -17,9 +17,10 @@ export default async function StatusPage() {
       <h1 className="text-2xl font-bold tracking-tight">Pipeline status</h1>
       <p className="mt-1 text-sm text-stone-600">
         One keyword track is scanned per run, least-recently-scanned first — coverage
-        grows without growing request volume. API sources run on GitHub Actions every
-        6 hours; HTML sources run from a residential machine and can lag — deliberately
-        (see data principles).
+        grows without growing request volume. TopDev is scheduled on GitHub Actions every
+        6 hours, but GitHub skips some scheduled runs, so expect 2–3 a day. ITviec and TopCV
+        run from a personal machine, less often — deliberately (see data principles) — so
+        their listings can be days old.
       </p>
       <p className="mt-2 text-sm text-stone-600">
         <span className="font-semibold text-stone-800 tabular-nums">{stats.open}</span> open ·{' '}

@@ -14,7 +14,7 @@ export default function PrinciplesPage() {
           <li><strong>Metadata only</strong>: job title, company name, displayed salary, location, skills and a link to the original posting. We never copy job descriptions.</li>
           <li><strong>Always link to the source</strong>: to read details or apply, you click through to the original site. JuniorLoop does not replace the source boards — it sends them readers.</li>
           <li><strong>No personal data</strong> from postings (recruiter names, phone numbers, emails) and no user accounts — your scoring profile lives in your own browser.</li>
-          <li><strong>Polite scanning</strong>: 4 times a day, with delays between requests and a User-Agent that identifies us. No logins, no CAPTCHA workarounds.</li>
+          <li><strong>Polite scanning</strong>: a few runs a day, with delays between requests and a User-Agent that identifies us. No logins, no CAPTCHA workarounds.</li>
           <li><strong>Removal on request</strong>: every source has its own kill switch. If you represent a source site and want us to stop, open an issue on the project's GitHub or use the contact email in the GitHub profile — the source will be disabled within 48 hours.</li>
         </ul>
         <p className="text-sm text-stone-500">

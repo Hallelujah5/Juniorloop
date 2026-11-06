@@ -17,7 +17,7 @@ const beVietnam = Be_Vietnam_Pro({
 export const metadata: Metadata = {
   title: { default: 'JuniorLoop — IT jobs for juniors, in one place', template: '%s · JuniorLoop' },
   description:
-    'Aggregates IT job postings from TopDev, ITviec and TopCV every 6 hours, filters for genuinely junior roles, and scores each posting against your profile. Free, no ads.',
+    'Aggregates IT job postings from TopDev, ITviec and TopCV, filters for genuinely junior roles, and scores each posting against your profile. Free, no ads.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

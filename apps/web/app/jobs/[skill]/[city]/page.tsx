@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const name = prettySkill(skill)
   return {
     title: `Junior ${name} jobs — ${cityName} (${juniors.length} open)`,
-    description: `${juniors.length} open junior ${name} positions in ${cityName}, aggregated from TopDev, ITviec and TopCV every 6 hours.`,
+    description: `${juniors.length} open junior ${name} positions in ${cityName}, aggregated from TopDev, ITviec and TopCV.`,
     robots: juniors.length === 0 ? { index: false, follow: true } : undefined,
   }
 }

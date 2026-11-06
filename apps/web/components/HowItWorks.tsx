@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 /**
- * First-visit onboarding. The site's model (a radar that re-scans every 6 hours,
+ * First-visit onboarding. The site's model (a radar that re-scans on a schedule,
  * not a live search box) is not guessable from the UI alone, so new visitors get
  * the explanation up front. Dismissal is remembered in localStorage — consistent
  * with the rest of the site, nothing leaves the browser — and the collapsed state
@@ -27,10 +27,11 @@ const STEPS: { title: string; body: React.ReactNode }[] = [
     title: 'It’s a radar, not a search box',
     body: (
       <>
-        A crawler re-scans TopDev, ITviec and TopCV every 6 hours across Hà Nội,
-        Hồ Chí Minh and Đà Nẵng, rotating six tracks: web, mobile, game, data, QA,
-        devops. Check in once a day — the “new since your last visit” counter shows
-        what appeared while you were away.
+        TopDev is scanned automatically every day, one track per run (web, mobile, game,
+        data, QA, devops), so each track refreshes every few days. ITviec and TopCV are
+        scanned less often, from a personal machine, so their postings can be days old —
+        every card shows when it was last seen. Check in every day or two: the “new since
+        your last visit” counter shows what appeared while you were away.
       </>
     ),
   },

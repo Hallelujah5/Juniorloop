@@ -1,7 +1,7 @@
 # JuniorLoop
 
 A job board for junior developers in Vietnam: aggregates postings from **TopDev, ITviec
-and TopCV** every 6 hours, filters for **genuinely junior roles** (senior postings are
+and TopCV** (TopDev automatically every day; ITviec and TopCV less often, from a personal machine), filters for **genuinely junior roles** (senior postings are
 flagged and hidden, never deleted), and **scores every posting** against a profile you
 define — computed in your own browser, with no account and no data sent anywhere.
 

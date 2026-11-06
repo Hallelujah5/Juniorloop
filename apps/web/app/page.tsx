@@ -36,7 +36,7 @@ export default async function HomePage({ searchParams }: { searchParams: SP }) {
     <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(ld)} />
       <h1 className="text-2xl font-bold tracking-tight">
-        Scan websites, fetch jobs info, 4 times per day
+        Scan websites, fetch jobs info, every day
       </h1>
       <p className="mt-1 text-sm text-stone-600">
         {jobs.length} open postings{!showSenior && ' (senior & 2y+ experience roles hidden)'}. Set up your{' '}

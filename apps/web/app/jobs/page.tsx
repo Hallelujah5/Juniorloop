@@ -5,7 +5,7 @@ import { jobsForSkill, prettySkill } from '@/lib/categories'
 export const metadata = {
   title: 'Browse junior jobs by skill',
   description:
-    'Junior developer jobs in Vietnam grouped by skill — Node.js, React, Unity, Python, QA and more. Aggregated from TopDev, ITviec and TopCV every 6 hours.',
+    'Junior developer jobs in Vietnam grouped by skill — Node.js, React, Unity, Python, QA and more. Aggregated from TopDev, ITviec and TopCV.',
 }
 
 export default async function BrowsePage() {
@@ -16,8 +16,8 @@ export default async function BrowsePage() {
     <div>
       <h1 className="text-2xl font-bold tracking-tight">Browse junior jobs by skill</h1>
       <p className="mt-1 text-sm text-stone-600">
-        {juniors.length} open junior postings across {tracks.length} skill tracks,
-        refreshed every 6 hours. Every count links to a dedicated page.
+        {juniors.length} open junior postings across {tracks.length} skill tracks.
+        Every count links to a dedicated page.
       </p>
       <div className="mt-6 space-y-6">
         {tracks.map((t) => (

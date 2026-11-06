@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const name = prettySkill(skill)
   return {
     title: `Junior ${name} jobs in Vietnam (${juniors.length} open)`,
-    description: `${juniors.length} open junior ${name} positions aggregated from TopDev, ITviec and TopCV, refreshed every 6 hours. No account needed — scored against your own profile, on your device.`,
+    description: `${juniors.length} open junior ${name} positions aggregated from TopDev, ITviec and TopCV. No account needed — scored against your own profile, on your device.`,
     // An empty category is honest but thin — keep it out of the index until it fills.
     robots: juniors.length === 0 ? { index: false, follow: true } : undefined,
   }

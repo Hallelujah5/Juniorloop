@@ -18,7 +18,7 @@ const LINKS = [
   { href: '/principles', label: 'Principles', isActive: (p: string) => p === '/principles' },
 ]
 
-/** The loop: a scan that comes back around — the 6-hour radar in one glyph. */
+/** The loop: a scan that comes back around — the recurring radar in one glyph. */
 function LoopMark() {
   return (
     <svg
